@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+
+    <style>
+      body {
+        font-family: Arial;
+      }
+
+      .match {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+
+      .match.played {
+        border-radius: 5px;
+        padding: 4px;
+        opacity: 0.7;
+      }
+
+      .team {
+        width: 150px;
+        font-weight: bold;
+      }
+
+      .team-left {
+        text-align: right;
+      }
+
+      .team-right {
+        text-align: left;
+      }
+
+      .score {
+        width: 40px;
+        text-align: center;
+        padding: 4px;
+      }
+
+      .dash {
+        font-weight: bold;
+      }
+
+      .save-btn {
+        padding: 4px 10px;
+        border: none;
+        background-color: #4CAF50;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .save-btn:hover {
+        background-color: #45a049;
+      }
+
+      table {
+        width: 100%;
+        margin-bottom: 20px;
+      }
+
+      th, td {
+        padding: 4px;
+        text-align: center;
+      }
+
+      td:first-child {
+        text-align: left;
+      }
+
+      .top-bar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .tabs {
+        margin-bottom: 10px;
+      }
+
+      .tabs button {
+        padding: 6px 12px;
+        margin-right: 5px;
+        cursor: pointer;
+      }
+
+      .actions {
+        margin-bottom: 15px;
+      }
+
+      .groups-container {
+        display: flex;
+        gap: 40px;
+      }
+
+      .bracket {
+        display: flex;
+        gap: 40px;
+      }
+
+      .round {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .bracket-match {
+        border: 1px solid #ccc;
+        padding: 8px;
+        border-radius: 6px;
+        width: 150px;
+        background: #f9f9f9;
+      }
+
+      .team-line {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+      }
+
+      .team-line input {
+        width: 50px;
+      }
+    </style>
+  </head>
+  <body>
+
+    <h2>Gestion tournoi</h2>
+
+    <div class="top-bar">
+      <select id="tournamentSelect"></select>
+    </div>
+
+    <div class="tabs">
+      <button onclick="showTab('groups')">Groupes</button>
+      <button onclick="showTab('knockout')">Phase finale</button>
+    </div>
+
+    <hr>
+
+
+    <div id="groupsTab">
+
+      <div class="actions">
+        <button onclick="loadTournament()">Charger</button>
+        <button onclick="generateMatches()">Générer les matchs de groupes</button>
+      </div>
+
+      <div class="groups-container" style="display:flex; gap:40px;">
+      <div id="matches" style="flex:2;"></div>
+      <div id="standings" style="flex:1;"></div>
+    </div>
+
+    </div>
+
+    <div id="knockoutTab" style="display:none;">
+
+      <div class="actions">
+        <button id="btnQuarters" onclick="generateQuarters()" style="display:none;">
+          Générer les quarts
+        </button>
+      </div>
+
+      <div id="bracket"></div>
+
+    </div>
+
+    <hr>
+
+    <script>
+
+    function init() {
+      console.log("INIT CALLED");
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          console.log("RAW RESPONSE:", res);
+
+          if (!res) {
+            alert("getTournaments returned NULL / UNDEFINED");
+            return;
+          }
+
+          const select = document.getElementById("tournamentSelect");
+
+          select.innerHTML = res
+            .map(t => `<option value="${t.id}">${t.name}</option>`)
+            .join("");
+
+          console.log("DROPDOWN FILLED");
+        })
+        .withFailureHandler(function(err) {
+          console.error("BACKEND ERROR:", err);
+          alert("Backend error: " + err.message);
+        })
+        .getTournaments();
+    }
+
+    function loadTournament() {
+      const tournamentId = document.getElementById("tournamentSelect").value;
+
+      console.log("LOAD TOURNAMENT:", tournamentId);
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          console.log("MATCHES RAW:", res);
+
+          if (!res || !res.matches) {
+            alert("No matches returned");
+            return;
+          }
+
+          renderMatches(res.matches);
+          renderStandings(res.standings);
+          renderBracket(res.knockoutMatches);
+
+          const btn = document.getElementById("btnQuarters");
+
+          if (res.isComplete) {
+            btn.style.display = "inline-block";
+          } else {
+            btn.style.display = "none";
+          }
+        })
+        .withFailureHandler(function(err) {
+          console.error(err);
+          alert(err.message);
+        })
+        .getTournamentData(tournamentId);
+    }
+
+
+    function generateMatches() {
+      const tournamentId = document.getElementById("tournamentSelect").value;
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          console.log("GENERATE OK:", res);
+          alert("Matchs générés !");
+          loadTournament();
+        })
+        .withFailureHandler(function(err) {
+          console.error(err);
+          alert(err.message);
+        })
+        .generateGroupMatches(tournamentId);
+    }
+
+
+    function renderMatches(matches) {
+      const container = document.getElementById("matches");
+      container.innerHTML = "";
+
+      if (!matches || matches.length === 0) {
+        container.innerHTML = "<p>No matches</p>";
+        return;
+      }
+
+      const groups = {};
+
+      matches.forEach(m => {
+        if (!groups[m.group]) groups[m.group] = [];
+        groups[m.group].push(m);
+      });
+
+      Object.keys(groups).forEach(group => {
+        const title = document.createElement("h3");
+        title.innerText = "Groupe " + group;
+        container.appendChild(title);
+
+        groups[group].forEach(m => {
+          const div = document.createElement("div");
+          div.className = "match " + (m.played ? "played" : "");
+          const disabled = m.played ? "disabled" : "";
+
+          div.innerHTML = `
+            <div class="match">
+              <span class="team team-left">${m.teamAName}</span>
+
+              <input class="score" ${disabled} type="number" min="0" step="1" id="a_${m.id}" value="${m.scoreA || ""}" />
+
+              <span class="dash">-</span>
+
+              <input class="score" ${disabled} type="number" min="0" step="1" id="b_${m.id}" value="${m.scoreB || ""}" />
+
+              <span class="team team-right">${m.teamBName}</span>
+
+              <button class="save-btn" ${disabled} onclick="saveScore('${m.id}')">Save Score</button>
+            </div>
+          `;
+
+          container.appendChild(div);
+        });
+      });
+    }
+
+
+    function saveScore(matchId) {
+      const scoreA = document.getElementById("a_" + matchId).value;
+      const scoreB = document.getElementById("b_" + matchId).value;
+
+      google.script.run
+        .withSuccessHandler(() => {
+          loadTournament();
+        })
+        .withFailureHandler(err => {
+          console.error(err);
+          alert(err.message);
+        })
+        .saveScore(matchId, scoreA, scoreB);
+    }
+
+    function renderStandings(standings) {
+      const container = document.getElementById("standings");
+      container.innerHTML = "";
+
+      Object.keys(standings).forEach(group => {
+        const title = document.createElement("h3");
+        title.innerText = "Classement Groupe " + group;
+        container.appendChild(title);
+
+        const table = document.createElement("table");
+        table.border = "1";
+
+        table.innerHTML = `
+          <tr>
+            <th>Team</th>
+            <th>Pts</th>
+            <th>J</th>
+            <th>G</th>
+            <th>N</th>
+            <th>P</th>
+            <th>+/-</th>
+          </tr>
+        `;
+
+        standings[group].forEach(t => {
+          const tr = document.createElement("tr");
+
+          tr.innerHTML = `
+            <td>${t.team}</td>
+            <td>${t.pts}</td>
+            <td>${t.played}</td>
+            <td>${t.win}</td>
+            <td>${t.draw}</td>
+            <td>${t.loss}</td>
+            <td>${t.gf - t.ga}</td>
+          `;
+
+          table.appendChild(tr);
+        });
+
+        container.appendChild(table);
+      });
+    }
+
+    function renderBracket(matches) {
+      const container = document.getElementById("bracket");
+      container.innerHTML = "";
+
+      const rounds = {
+        QF: [],
+        SF: [],
+        FINAL: []
+      };
+
+      matches.forEach(m => {
+        if (rounds[m.stage]) {
+          rounds[m.stage].push(m);
+        }
+      });
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "bracket";
+
+      Object.keys(rounds).forEach(stage => {
+        const col = document.createElement("div");
+        col.className = "round";
+
+        const title = document.createElement("h3");
+        title.innerText = stage;
+        col.appendChild(title);
+
+        rounds[stage].forEach(m => {
+          const match = document.createElement("div");
+          match.className = "bracket-match";
+
+          const disabled = (m.played || !m.teamA || !m.teamB) ? "disabled" : "";
+
+          match.innerHTML = `
+            <div class="team-line">
+              <span>${m.teamA || "-"}</span>
+              <input type="number" min="0" id="a_${m.id}" value="${m.scoreA || ""}" ${disabled}/>
+            </div>
+
+            <div class="team-line">
+              <span>${m.teamB || "-"}</span>
+              <input type="number" min="0" id="b_${m.id}" value="${m.scoreB || ""}" ${disabled}/>
+            </div>
+
+            ${(!m.played && m.teamA && m.teamB)
+              ? `<button onclick="saveScore('${m.id}')">Save Score</button>`
+              : `<span class="played">✔</span>`
+            }
+          `;
+
+          col.appendChild(match);
+        });
+
+        wrapper.appendChild(col);
+      });
+
+      container.appendChild(wrapper);
+    }
+
+    function showTab(tab) {
+      document.getElementById("groupsTab").style.display = tab === "groups" ? "block" : "none";
+      document.getElementById("knockoutTab").style.display = tab === "knockout" ? "block" : "none";
+    }
+
+    function generateQuarters() {
+      const tournamentId = document.getElementById("tournamentSelect").value;
+
+      google.script.run
+        .withSuccessHandler(() => {
+          alert("Quarts générés !");
+          loadTournament();
+        })
+        .withFailureHandler(err => {
+          alert(err.message);
+        })
+        .generateQuarterFinals(tournamentId);
+    }
+
+    window.onload = init;
+
+    </script>
+    
+  </body>
+</html>
+
