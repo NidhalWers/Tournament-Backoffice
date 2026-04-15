@@ -237,7 +237,6 @@
     <div id="groupsTab">
 
       <div class="actions">
-        <button onclick="loadTournament()">Charger la phase de groupes</button>
         <button onclick="generateMatches()">Générer les matchs de groupes</button>
       </div>
 
@@ -657,9 +656,11 @@
 
       if (tab === "groups") {
         document.getElementById("groupsTab").style.display = "block";
+        loadTournament();
       }
       if (tab === "knockout") {
         document.getElementById("knockoutTab").style.display = "block";
+        loadTournament();
       }
       if (tab === "stats") {
         document.getElementById("statsTab").style.display = "block";
