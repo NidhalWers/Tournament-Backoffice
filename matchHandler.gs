@@ -320,10 +320,16 @@ function saveScore(matchId, scoreA, scoreB) {
 function saveMatchWithGoals(matchId, scoreA, scoreB, goals) {
   saveScore(matchId, scoreA, scoreB);
 
+  const matches = getSheetData("Matches");
+  const match = matches.find(m => String(m.id) === String(matchId));
+
+  const tournamentId = match.tournamentId;
+
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Goals");
 
   const rows = goals.map(g => [
     Utilities.getUuid(),
+    tournamentId,
     matchId,
     g.team,
     g.player,
