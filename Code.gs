@@ -24,7 +24,11 @@ function getTournamentData(tournamentId) {
   const knockoutMatches = getSheetData("Matches")
     .filter(m => String(m.tournamentId) === String(tournamentId) && m.stage !== "GROUP");
 
-  return { matches, standings, isComplete, knockoutMatches };
+  const goals = getSheetData("Goals")
+  .filter(g => matches.some(m => m.id === g.matchId)
+            || knockoutMatches.some(m => m.id === g.matchId));
+
+  return { matches, standings, isComplete, knockoutMatches, goals };
 }
 
 function doGet() {

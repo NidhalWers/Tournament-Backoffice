@@ -316,3 +316,44 @@ function saveScore(matchId, scoreA, scoreB) {
     }
   }
 }
+
+function saveMatchWithGoals(matchId, scoreA, scoreB, goals) {
+  saveScore(matchId, scoreA, scoreB);
+
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Goals");
+
+  const rows = goals.map(g => [
+    Utilities.getUuid(),
+    matchId,
+    g.team,
+    g.player,
+    g.teamName
+  ]);
+
+  if (rows.length > 0) {
+    sheet.getRange(
+      sheet.getLastRow() + 1,
+      1,
+      rows.length,
+      rows[0].length
+    ).setValues(rows);
+  }
+}
+
+function getTeamNamesByMatchId(matchId) {
+  const matches = getSheetData("Matches");
+  const teams = getSheetData("Teams");
+
+  const match = matches.find(m => String(m.id) === String(matchId));
+  if (!match) {
+    throw new Error("Match introuvable");
+  }
+
+  const teamMap = {};
+  teams.forEach(t => teamMap[t.id] = t.name);
+
+  return {
+    teamAName: teamMap[match.teamA] || match.teamA,
+    teamBName: teamMap[match.teamB] || match.teamB
+  };
+}
