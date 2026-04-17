@@ -31,6 +31,17 @@ function getTournamentData(tournamentId) {
   return { matches, standings, isComplete, knockoutMatches, goals };
 }
 
+/*
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('Index');
+}
+*/
+
+function doGet() {
+  const template = HtmlService.createTemplateFromFile("Index");
+  return template.evaluate();
+}
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }

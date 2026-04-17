@@ -1,0 +1,267 @@
+<style>
+        body {
+        font-family: Arial;
+      }
+
+      .match {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+
+      .match.played {
+        border-radius: 5px;
+        padding: 4px;
+        opacity: 0.7;
+      }
+
+      .team {
+        width: 150px;
+        font-weight: bold;
+      }
+
+      .team-left {
+        text-align: right;
+      }
+
+      .team-right {
+        text-align: left;
+      }
+
+      .score {
+        width: 40px;
+        text-align: center;
+        padding: 4px;
+      }
+
+      .dash {
+        font-weight: bold;
+      }
+
+      .save-btn {
+        padding: 4px 10px;
+        border: none;
+        background-color: #4CAF50;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .save-btn:hover {
+        background-color: #45a049;
+      }
+
+      table {
+        width: 100%;
+        margin-bottom: 20px;
+      }
+
+      th, td {
+        padding: 4px;
+        text-align: center;
+      }
+
+      td:first-child {
+        text-align: left;
+      }
+
+      .top-bar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .tabs button {
+        padding: 6px 12px;
+        margin-right: 5px;
+        cursor: pointer;
+      }
+
+      .actions {
+        margin-bottom: 15px;
+      }
+
+      .groups-container {
+        display: flex;
+        gap: 40px;
+      }
+
+      .bracket {
+        display: flex;
+        gap: 40px;
+      }
+
+      .round {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .bracket-match {
+        border: 1px solid #ccc;
+        padding: 8px;
+        border-radius: 6px;
+        width: 150px;
+        background: #f9f9f9;
+      }
+
+      .team-line {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+      }
+
+      .team-line input {
+        width: 50px;
+      }
+
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+      }
+
+      .modal-content {
+        background: white;
+        padding: 20px;
+        margin: 100px auto;
+        width: 300px;
+        border-radius: 8px;
+      }
+
+      .match-wrapper {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 12px;
+      }
+
+      .match-line {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .goals-container {
+        margin-top: 4px;
+      }
+
+      .goals-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+      }
+
+      .goal-left {
+        width: 50%;
+        text-align: left;
+      }
+
+      .goal-right {
+        width: 50%;
+        text-align: right;
+      }
+
+      .bracket-match .match-wrapper {
+        display: flex;
+        flex-direction: column; /* 🔥 CRUCIAL */
+        gap: 4px;
+      }
+
+      .bracket-match .goals-container {
+        margin-top: 4px;
+      }
+
+      .bracket-match .goals-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+      }
+
+      .bracket-match .goal-left {
+        width: 50%;
+        text-align: left;
+      }
+
+      .bracket-match .goal-right {
+        width: 50%;
+        text-align: right;
+      }
+
+      #statsTab table {
+        border-collapse: collapse;
+        width: 400px;
+      }
+
+      #statsTab th, #statsTab td {
+        border: 1px solid #ddd;
+        padding: 6px;
+        text-align: center;
+      }
+
+      #statsTab th {
+        background-color: #f4f4f4;
+      }
+      .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+
+      .tab {
+        padding: 8px 16px;
+        border: none;
+        background: #eee;
+        cursor: pointer;
+        border-radius: 6px;
+        font-weight: bold;
+        transition: all 0.2s ease;
+      }
+
+      .tab:hover {
+        background: #ddd;
+      }
+
+      /* Onglet actif */
+      .tab.active {
+        background: #4CAF50;
+        color: white;
+      }
+
+      /* Animation */
+      .tab:active {
+        transform: scale(0.95);
+      }
+
+      .loader-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,255,255,0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 5px solid #ccc;
+        border-top: 5px solid #4CAF50;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+</style>

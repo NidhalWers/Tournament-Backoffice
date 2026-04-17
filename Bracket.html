@@ -1,0 +1,105 @@
+<script>
+
+function renderBracket(matches) {
+  const container = document.getElementById("bracket");
+  container.innerHTML = "";
+
+  const rounds = {
+    QF: [],
+    SF: [],
+    FINAL: []
+  };
+
+  matches.forEach(m => {
+    if (rounds[m.stage]) {
+      rounds[m.stage].push(m);
+    }
+  });
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "bracket";
+
+  Object.keys(rounds).forEach(stage => {
+    const col = document.createElement("div");
+    col.className = "round";
+
+    const title = document.createElement("h3");
+    title.innerText = stage;
+    col.appendChild(title);
+
+    rounds[stage].forEach(m => {
+      const match = document.createElement("div");
+      match.className = "bracket-match";
+
+      const disabled = (m.played || !m.teamA || !m.teamB) ? "disabled" : "";
+
+      const goals = getGoalsForMatch(m.id);
+      const goalsA = goals.filter(g => g.team === "A");
+      const goalsB = goals.filter(g => g.team === "B");
+
+      const maxGoals = Math.max(goalsA.length, goalsB.length);
+
+      let goalsHtml = "";
+      for (let i = 0; i < maxGoals; i++) {
+        goalsHtml += `
+          <div class="goals-row">
+            <div class="goal-left">${goalsA[i] ? "⚽ " + goalsA[i].playerName : ""}</div>
+            <div class="goal-right">${goalsB[i] ? "⚽ " + goalsB[i].playerName : ""}</div>
+          </div>
+        `;
+      }
+
+      match.innerHTML = `
+        <div class="match-wrapper">
+
+          <div class="team-line">
+            <span>${m.teamA || "-"}</span>
+            <input type="number" min="0" id="a_${m.id}" value="${m.scoreA || ""}" ${disabled}/>
+          </div>
+
+          <div class="team-line">
+            <span>${m.teamB || "-"}</span>
+            <input type="number" min="0" id="b_${m.id}" value="${m.scoreB || ""}" ${disabled}/>
+          </div>
+
+          <div class="goals-container">
+            ${goalsHtml}
+          </div>
+
+          ${(!m.played && m.teamA && m.teamB)
+            ? `<button onclick="saveScore('${m.id}')">Save Score</button>`
+            : `<span class="played">✔</span>`
+          }
+
+        </div>
+      `;
+
+      col.appendChild(match);
+    });
+
+    wrapper.appendChild(col);
+  });
+
+  container.appendChild(wrapper);
+}
+
+
+function generateQuarters() {
+  const tournamentId = document.getElementById("tournamentSelect").value;
+
+  showLoader(); 
+  
+  google.script.run
+    .withSuccessHandler(() => {
+      hideLoader();
+      alert("Quarts générés !");
+      loadTournament();
+    })
+    .withFailureHandler(err => {
+      hideLoader();
+      alert(err.message);
+    })
+    .generateQuarterFinals(tournamentId);
+}
+
+</script>
