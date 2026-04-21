@@ -1,5 +1,38 @@
 <script>
 
+function renderMatch(m) {
+  const disabled = (m.played || !m.teamA || !m.teamB) ? "disabled" : "";
+
+  return `
+    <div class="bracket-match">
+      <div class="match-wrapper">
+
+        <div class="team-line">
+          <span>${m.teamA || "-"}</span>
+          <div class="score-actions">
+            <input type="number" min="0" id="a_${m.id}" value="${m.scoreA || ""}" ${disabled}/>
+            <button class="forfeit-btn" ${disabled} onclick="setForfeit('${m.id}', 'A')">Forfait</button>
+          </div>
+        </div>
+
+        <div class="team-line">
+          <span>${m.teamB || "-"}</span>
+          <div class="score-actions">
+            <input type="number" min="0" id="b_${m.id}" value="${m.scoreB || ""}" ${disabled}/>
+            <button class="forfeit-btn" ${disabled} onclick="setForfeit('${m.id}', 'B')">Forfait</button>
+          </div>
+        </div>
+
+        ${(!m.played && m.teamA && m.teamB)
+          ? `<button class="save-btn" onclick="saveScore('${m.id}')">Save Score</button>`
+          : `<span class="played">✔</span>`
+        }
+
+      </div>
+    </div>
+  `;
+}
+
 function renderMatches(matches) {
   const container = document.getElementById("matches");
   container.innerHTML = "";
@@ -48,6 +81,7 @@ function renderMatches(matches) {
           <div class="match-line">
             
             <span class="team team-left">${m.teamAName}</span>
+            <button class="forfeit-btn" ${disabled} onclick="setForfeit('${m.id}', 'A')">Forfait</button>
 
             <input class="score" ${disabled} type="number" min="0" step="1" id="a_${m.id}" value="${m.scoreA || ""}" />
             
@@ -55,6 +89,7 @@ function renderMatches(matches) {
 
             <input class="score" ${disabled} type="number" min="0" step="1" id="b_${m.id}" value="${m.scoreB || ""}" />
 
+            <button class="forfeit-btn" ${disabled} onclick="setForfeit('${m.id}', 'B')">Forfait</button>
             <span class="team team-right">${m.teamBName}</span>
             
             <button class="save-btn" ${disabled} onclick="saveScore('${m.id}')">Save Score</button>
@@ -92,6 +127,8 @@ function renderStandings(standings) {
         <th>G</th>
         <th>N</th>
         <th>P</th>
+        <th>BP</th>
+        <th>BC</th>
         <th>+/-</th>
       </tr>
     `;
@@ -106,6 +143,8 @@ function renderStandings(standings) {
         <td>${t.win}</td>
         <td>${t.draw}</td>
         <td>${t.loss}</td>
+        <td>${t.gf}</td>
+        <td>${t.ga}</td>
         <td>${t.gf - t.ga}</td>
       `;
 
@@ -114,6 +153,34 @@ function renderStandings(standings) {
 
     container.appendChild(table);
   });
+}
+
+function setForfeit(matchId, forfeitingTeam) {
+  if (!confirm("Confirmer le forfait ?")) return;
+
+  let scoreA = 0;
+  let scoreB = 0;
+
+  if (forfeitingTeam === "A") {
+    scoreA = 0;
+    scoreB = 3;
+  } else {
+    scoreA = 3;
+    scoreB = 0;
+  }
+
+  showLoader();
+
+  google.script.run
+    .withSuccessHandler(() => {
+      hideLoader();
+      loadTournament();
+    })
+    .withFailureHandler(err => {
+      hideLoader();
+      alert(err.message);
+    })
+    .saveForfeit(matchId, scoreA, scoreB);
 }
 
 </script>

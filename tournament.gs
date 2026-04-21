@@ -118,17 +118,28 @@ function getQualifiedTeams(standings) {
     }
   });
 
+  let tieBreakOccurred = false;
   // 🔥 tri des meilleurs 3e
   thirdPlace.sort((a, b) => {
-    return (
-      b.pts - a.pts ||
-      (b.gf - b.ga) - (a.gf - a.ga) ||
-      b.gf - a.gf
-    );
+    if (b.pts !== a.pts) return b.pts - a.pts;
+
+    const diffA = a.gf - a.ga;
+    const diffB = b.gf - b.ga;
+
+    if (diffB !== diffA) return diffB - diffA;
+
+    if (b.gf !== a.gf) return b.gf - a.gf;
+
+    // ⚠️ égalité parfaite → tirage
+    tieBreakOccurred = true;
+    return Math.random() - 0.5;
   });
 
   // prendre les 2 meilleurs
   qualified.push(...thirdPlace.slice(0, 2));
 
-  return qualified;
+  return {
+    teams: qualified,
+    tieBreakOccurred: tieBreakOccurred
+  };
 }

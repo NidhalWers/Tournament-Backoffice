@@ -119,7 +119,8 @@ function generateQuarterFinals(tournamentId) {
     throw new Error("Les matchs de phases finales existent déjà !");
   }
 
-  const qualified = getQualifiedTeams(data.standings);
+  const qualifiedData = getQualifiedTeams(data.standings);
+  const qualified = qualifiedData.teams;
 
   const pairings = drawQuarterFinals(qualified);
 
@@ -221,7 +222,10 @@ function generateQuarterFinals(tournamentId) {
     allMatches[0].length
   ).setValues(allMatches);
 
-  return allMatches;
+  return {
+    matches: allMatches,
+    tieBreakDetected: qualifiedData.tieBreakDetected
+};
 }
 
 function drawQuarterFinals(qualified) {
@@ -362,4 +366,24 @@ function getTeamNamesByMatchId(matchId) {
     teamAName: teamMap[match.teamA] || match.teamA,
     teamBName: teamMap[match.teamB] || match.teamB
   };
+}
+
+function saveForfeit(matchId, scoreA, scoreB) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Matches");
+  const data = sheet.getDataRange().getValues();
+
+  const headers = data[0];
+  const idxId = headers.indexOf("id");
+  const idxA = headers.indexOf("scoreA");
+  const idxB = headers.indexOf("scoreB");
+  const idxPlayed = headers.indexOf("played");
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][idxId] === matchId) {
+      sheet.getRange(i + 1, idxA + 1).setValue(scoreA);
+      sheet.getRange(i + 1, idxB + 1).setValue(scoreB);
+      sheet.getRange(i + 1, idxPlayed + 1).setValue(true);
+      break;
+    }
+  }
 }

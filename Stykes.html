@@ -53,6 +53,20 @@
         background-color: #45a049;
       }
 
+      .forfeit-btn {
+        padding: 4px 10px;
+        border: none;
+        background-color: #D22B2B;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .forfeit-btn:hover {
+        background-color: #FAA0A0;
+      }
+
       table {
         width: 100%;
         margin-bottom: 20px;
@@ -257,6 +271,46 @@
         border-top: 5px solid #4CAF50;
         border-radius: 50%;
         animation: spin 1s linear infinite;
+      }
+
+      .bracket-ldc {
+        display: flex;
+        justify-content: center;
+        gap: 40px;
+        align-items: flex-start;
+      }
+
+      .round {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 40px;
+      }
+
+      .round:nth-child(2),
+      .round:nth-child(4) {
+        margin-top: 40px;
+      }
+
+      .round:nth-child(3) {
+        margin-top: 80px;
+      }
+
+      .side {
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+      }
+
+      .center {
+        display: flex;
+        align-items: center;
+      }
+
+      .round {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
       }
 
       @keyframes spin {
