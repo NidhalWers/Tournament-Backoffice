@@ -6,6 +6,7 @@ function getGoalsForMatch(matchId) {
 
 let currentMatchId = null;
 let currentScores = null;
+let currentMatch = null;
 
 function saveScore(matchId) {
   const scoreA = parseInt(document.getElementById("a_" + matchId).value);
@@ -13,6 +14,7 @@ function saveScore(matchId) {
 
   currentMatchId = matchId;
   currentScores = { scoreA, scoreB };
+  currentMatch = findMatchById(matchId);
 
   openGoalModal(matchId, scoreA, scoreB);
 }
@@ -33,6 +35,28 @@ function openGoalModal(matchId, scoreA, scoreB) {
     html += `<input placeholder="Buteur B ${i+1}" id="goalB_${i}" /><br>`;
   }
 
+  const isKnockout =
+    currentMatch.stage === "QF" ||
+    currentMatch.stage === "SF" ||
+    currentMatch.stage === "FINAL";
+
+  if (scoreA === scoreB && isKnockout) {
+    html += `
+      <hr>
+      <h4>Vainqueur aux tirs au but</h4>
+
+      <label>
+        <input type="radio" name="penaltyWinner" value="A">
+        ${currentMatch.teamA}
+      </label>
+
+      <label style="margin-left:10px;">
+        <input type="radio" name="penaltyWinner" value="B">
+        ${currentMatch.teamB}
+      </label>
+    `;
+  }
+
   container.innerHTML = html;
 
   document.getElementById("goalModal").style.display = "block";
@@ -43,6 +67,24 @@ function closeModal() {
 }
 
 function submitGoals() {
+  const isKnockout =
+    currentMatch.stage === "QF" ||
+    currentMatch.stage === "SF" ||
+    currentMatch.stage === "FINAL";
+
+  let penaltyWinner = null;
+
+  if (isKnockout && currentScores.scoreA === currentScores.scoreB) {
+    const checked = document.querySelector('input[name="penaltyWinner"]:checked');
+
+    if (!checked) {
+      alert("Choisir un vainqueur aux tirs au but");
+      return;
+    }
+
+    penaltyWinner = checked.value;
+  }
+
   showLoader(); 
 
   google.script.run
@@ -87,7 +129,8 @@ function submitGoals() {
           currentMatchId,
           currentScores.scoreA,
           currentScores.scoreB,
-          goals
+          goals,
+          penaltyWinner
         );
 
     })

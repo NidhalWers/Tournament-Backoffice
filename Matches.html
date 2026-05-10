@@ -183,4 +183,13 @@ function setForfeit(matchId, forfeitingTeam) {
     .saveForfeit(matchId, scoreA, scoreB);
 }
 
+function findMatchById(matchId) {
+  const allMatches = [
+    ...(window.currentGroupMatches || []),
+    ...(window.currentKnockoutMatches || [])
+  ];
+
+  return allMatches.find(m => String(m.id) === String(matchId));
+}
+
 </script>

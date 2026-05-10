@@ -266,7 +266,7 @@ function drawQuarterFinals(qualified) {
   return pairings;
 }
 
-function saveScore(matchId, scoreA, scoreB) {
+function saveScore(matchId, scoreA, scoreB, penaltyWinner) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Matches");
   const data = sheet.getDataRange().getValues();
 
@@ -275,12 +275,14 @@ function saveScore(matchId, scoreA, scoreB) {
   const idxA = headers.indexOf("scoreA");
   const idxB = headers.indexOf("scoreB");
   const idxPlayed = headers.indexOf("played");
+  const idxPenaltyWinner = headers.indexOf("penaltyWinner");
 
   for (let i = 1; i < data.length; i++) {
     if (data[i][idxId] === matchId) {
       sheet.getRange(i + 1, idxA + 1).setValue(scoreA);
       sheet.getRange(i + 1, idxB + 1).setValue(scoreB);
       sheet.getRange(i + 1, idxPlayed + 1).setValue(true);
+      sheet.getRange(i + 1, idxPenaltyWinner + 1).setValue(penaltyWinner);
       break;
     }
   }
@@ -291,12 +293,24 @@ function saveScore(matchId, scoreA, scoreB) {
   const idxTeamB = headers.indexOf("teamB");
 
   for (let i = 1; i < data.length; i++) {
-    if (data[i][idxId] === matchId) {
+    if (data[i][idxId] === matchId && isKnockoutMatch(data[i][idxId])) {
 
       const teamA = data[i][idxTeamA];
       const teamB = data[i][idxTeamB];
 
-      const winner = scoreA > scoreB ? teamA : teamB;
+      let winner = null;
+
+      if (scoreA > scoreB) {
+        winner = teamA;
+      } else if (scoreB > scoreA) {
+        winner = teamB;
+      } else {
+        if (!penaltyWinner) {
+          throw new Error("Match nul : vainqueur TAB requis");
+        }
+
+        winner = penaltyWinner === "A" ? teamA : teamB;
+      }
 
       const nextMatchId = data[i][idxNextMatchId];
       const nextSlot = data[i][idxNextSlot];
@@ -321,8 +335,13 @@ function saveScore(matchId, scoreA, scoreB) {
   }
 }
 
-function saveMatchWithGoals(matchId, scoreA, scoreB, goals) {
-  saveScore(matchId, scoreA, scoreB);
+function saveMatchWithGoals(matchId, scoreA, scoreB, goals, penaltyWinner) {
+  saveScore(matchId, scoreA, scoreB, penaltyWinner);
+
+  if (scoreA === 0 && scoreB === 0) {
+    // pas de buteur
+    return;
+  }
 
   const matches = getSheetData("Matches");
   const match = matches.find(m => String(m.id) === String(matchId));
@@ -369,21 +388,14 @@ function getTeamNamesByMatchId(matchId) {
 }
 
 function saveForfeit(matchId, scoreA, scoreB) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Matches");
-  const data = sheet.getDataRange().getValues();
+  saveScore(matchId, scoreA, scoreB);
+}
 
-  const headers = data[0];
-  const idxId = headers.indexOf("id");
-  const idxA = headers.indexOf("scoreA");
-  const idxB = headers.indexOf("scoreB");
-  const idxPlayed = headers.indexOf("played");
+function isKnockoutMatch(currentMatch){
+  const isKnockout =
+  currentMatch.stage === "QF" ||
+  currentMatch.stage === "SF" ||
+  currentMatch.stage === "FINAL";
 
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][idxId] === matchId) {
-      sheet.getRange(i + 1, idxA + 1).setValue(scoreA);
-      sheet.getRange(i + 1, idxB + 1).setValue(scoreB);
-      sheet.getRange(i + 1, idxPlayed + 1).setValue(true);
-      break;
-    }
-  }
+  return isKnockout;
 }

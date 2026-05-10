@@ -41,6 +41,9 @@ function loadTournament() {
       }
       goalsData = res.goals || [];
 
+      window.currentGroupMatches = res.matches || [];
+      window.currentKnockoutMatches = res.knockoutMatches || [];
+
       renderMatches(res.matches);
       renderStandings(res.standings);
       renderBracket(res.knockoutMatches);
