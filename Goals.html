@@ -35,6 +35,38 @@ function openGoalModal(matchId, scoreA, scoreB) {
     html += `<input placeholder="Buteur B ${i+1}" id="goalB_${i}" /><br>`;
   }
 
+  html += `
+    <hr>
+
+    <h4>Respect & Solidarité - Équipe A</h4>
+
+    Cartons rouges :
+    <input type="number" id="redA" min="0" value="0"><br>
+
+    Rouges insulte / bagarre :
+    <input type="number" id="seriousRedA" min="0" value="0"><br>
+
+    <hr>
+
+    <h4>Respect & Solidarité - Équipe B</h4>
+
+    Cartons rouges :
+    <input type="number" id="redB" min="0" value="0"><br>
+
+    Rouges insulte / bagarre :
+    <input type="number" id="seriousRedB" min="0" value="0"><br>
+
+    <hr>
+
+    <h4>Point solidarité</h4>
+
+    <label>Equipe ayant fourni un arbitre :</label><br>
+
+    <select id="solidarityTeam">
+        <option value="">Aucune</option>
+    </select>
+  `;
+
   const isKnockout =
     currentMatch.stage === "QF" ||
     currentMatch.stage === "SF" ||
@@ -56,6 +88,21 @@ function openGoalModal(matchId, scoreA, scoreB) {
       </label>
     `;
   }
+
+  google.script.run
+  .withSuccessHandler(function(teams) {
+    
+    const select = document.getElementById("solidarityTeam");
+
+    teams.forEach(team => {
+      const option = document.createElement("option");
+      option.value = team.id;
+      option.textContent = team.name;
+      select.appendChild(option);
+    });
+
+  })
+  .getTournamentTeams(currentMatchId);
 
   container.innerHTML = html;
 
@@ -116,6 +163,18 @@ function submitGoals() {
         }
       }
 
+      const fairPlay = {
+        teamA: {
+          redCards: parseInt(document.getElementById("redA").value) || 0,
+          seriousRedCards: parseInt(document.getElementById("seriousRedA").value) || 0
+        },
+        teamB: {
+          redCards: parseInt(document.getElementById("redB").value) || 0,
+          seriousRedCards: parseInt(document.getElementById("seriousRedB").value) || 0
+        },
+        solidarityTeamId: document.getElementById("solidarityTeam").value
+      };
+
       // save
       showLoader(); 
       
@@ -130,7 +189,8 @@ function submitGoals() {
           currentScores.scoreA,
           currentScores.scoreB,
           goals,
-          penaltyWinner
+          penaltyWinner,
+          fairPlay
         );
 
     })

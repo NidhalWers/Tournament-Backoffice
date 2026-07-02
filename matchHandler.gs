@@ -20,6 +20,9 @@ function generateGroupMatches(tournamentId) {
   const idxTeam = headers.indexOf("teamId");
   const idxGroup = headers.indexOf("group");
 
+  // const tournamentData = getTournamentData(tournamentId);
+  // const format = getTournamentFormat(tournamentData.standings);
+
   const groups = {};
 
   data.forEach(row => {
@@ -106,13 +109,14 @@ function generateRoundRobin(teams) {
   return rounds;
 }
 
-function generateQuarterFinals(tournamentId) {
+function generateFinalPhase(tournamentId) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Matches");
 
   const data = getTournamentData(tournamentId);
 
   const existing = getSheetData("Matches")
-    .filter(m => String(m.tournamentId) === String(tournamentId) && m.stage === "QF");
+    .filter(m => String(m.tournamentId) === String(tournamentId) && 
+    ["QF", "SF", "FINAL"].includes(m.stage));
 
   if (existing.length > 0) {
     Logger.log("Les matchs de phases finales existent déjà !");
@@ -120,8 +124,118 @@ function generateQuarterFinals(tournamentId) {
   }
 
   const qualifiedData = getQualifiedTeams(data.standings);
+
+  if (qualifiedData.teams.length === 4){
+    return generateSemiFinalBracket(
+      tournamentId,
+      sheet,
+      qualifiedData)
+  }
+
+  return generateQuarterFinalBracket(
+    tournamentId,
+    sheet,
+    qualifiedData)
+}
+
+function generateSemiFinalBracket(tournamentId, sheet, qualifiedData) {
+
   const qualified = qualifiedData.teams;
 
+  // =========================================
+  // récupérer les seeds
+  // =========================================
+
+  const groupA = qualified.filter(t => t.group === "A");
+  const groupB = qualified.filter(t => t.group === "B");
+
+  const A1 = groupA.find(t => t.rank === 1);
+  const A2 = groupA.find(t => t.rank === 2);
+
+  const B1 = groupB.find(t => t.rank === 1);
+  const B2 = groupB.find(t => t.rank === 2);
+
+  // =========================================
+  // Finale
+  // =========================================
+
+  const finalId = Utilities.getUuid();
+
+  const finalMatch = [[
+    finalId,
+    tournamentId,
+    "FINAL",
+    null,
+    "",
+    "",
+    "",
+    "",
+    false,
+    "",
+    ""
+  ]];
+
+  // =========================================
+  // Demi-finales
+  // =========================================
+
+  const sfMatches = [
+
+    // SF1 : A1 vs B2
+    [
+      Utilities.getUuid(),
+      tournamentId,
+      "SF",
+      null,
+      A1.team,
+      B2.team,
+      "",
+      "",
+      false,
+      finalId,
+      "A"
+    ],
+
+    // SF2 : B1 vs A2
+    [
+      Utilities.getUuid(),
+      tournamentId,
+      "SF",
+      null,
+      B1.team,
+      A2.team,
+      "",
+      "",
+      false,
+      finalId,
+      "B"
+    ]
+  ];
+
+  // =========================================
+  // Save
+  // =========================================
+
+  const allMatches = [
+    ...sfMatches,
+    ...finalMatch
+  ];
+
+  sheet.getRange(
+    sheet.getLastRow() + 1,
+    1,
+    allMatches.length,
+    allMatches[0].length
+  ).setValues(allMatches);
+
+  return {
+    matches: allMatches,
+    tieBreakDetected: qualifiedData.tieBreakDetected
+  };
+}
+
+function generateQuarterFinalBracket(tournamentId, sheet, qualifiedData){
+  const qualified = qualifiedData.teams;
   const pairings = drawQuarterFinals(qualified);
 
   const finalId = Utilities.getUuid();
@@ -225,7 +339,7 @@ function generateQuarterFinals(tournamentId) {
   return {
     matches: allMatches,
     tieBreakDetected: qualifiedData.tieBreakDetected
-};
+  };
 }
 
 function drawQuarterFinals(qualified) {
@@ -292,8 +406,10 @@ function saveScore(matchId, scoreA, scoreB, penaltyWinner) {
   const idxTeamA = headers.indexOf("teamA");
   const idxTeamB = headers.indexOf("teamB");
 
+  const idxStage = headers.indexOf("stage");
+
   for (let i = 1; i < data.length; i++) {
-    if (data[i][idxId] === matchId && isKnockoutMatch(data[i][idxId])) {
+    if (data[i][idxId] === matchId && isKnockoutMatch(data[i], idxStage)) {
 
       const teamA = data[i][idxTeamA];
       const teamB = data[i][idxTeamB];
@@ -335,9 +451,13 @@ function saveScore(matchId, scoreA, scoreB, penaltyWinner) {
   }
 }
 
-function saveMatchWithGoals(matchId, scoreA, scoreB, goals, penaltyWinner) {
+function saveMatchWithGoals(matchId, scoreA, scoreB, goals, penaltyWinner, fairPlay) {
   saveScore(matchId, scoreA, scoreB, penaltyWinner);
+  registerScorers(matchId, scoreA, scoreB, goals);
+  registerFairPlay(matchId, fairPlay);
+}
 
+function registerScorers(matchId, scoreA, scoreB, goals){
   if (scoreA === 0 && scoreB === 0) {
     // pas de buteur
     return;
@@ -388,14 +508,16 @@ function getTeamNamesByMatchId(matchId) {
 }
 
 function saveForfeit(matchId, scoreA, scoreB) {
+  Logger.log(matchId+" "+scoreA+" ")+scoreB
   saveScore(matchId, scoreA, scoreB);
 }
 
-function isKnockoutMatch(currentMatch){
+function isKnockoutMatch(currentMatch, idxStage){
+
   const isKnockout =
-  currentMatch.stage === "QF" ||
-  currentMatch.stage === "SF" ||
-  currentMatch.stage === "FINAL";
+  currentMatch[idxStage] === "QF" ||
+  currentMatch[idxStage] === "SF" ||
+  currentMatch[idxStage] === "FINAL";
 
   return isKnockout;
 }

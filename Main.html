@@ -51,6 +51,7 @@ function loadTournament() {
       const btn = document.getElementById("btnQuarters");
 
       if (res.isComplete) {
+        console.log("btn quarter to display");
         btn.style.display = "inline-block";
       } else {
         btn.style.display = "none";

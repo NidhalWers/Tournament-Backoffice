@@ -10,6 +10,47 @@ function getTournaments() {
   }));
 }
 
+function getTournamentData(tournamentId) {
+  const matches = getSheetData("Matches")
+    .filter(m => String(m.tournamentId) === String(tournamentId) && m.stage === "GROUP");
+
+  const teams = getSheetData("Teams");
+
+  const teamMap = {};
+  teams.forEach(t => teamMap[t.id] = t.name);
+
+  // enrichir les matchs
+  matches.forEach(m => {
+    m.teamAName = teamMap[m.teamA] || m.teamA;
+    m.teamBName = teamMap[m.teamB] || m.teamB;
+  });
+
+  const fairPlay = getSheetData("FairPlay")
+  .filter(fp => String(fp.tournamentId) === String(tournamentId));
+
+  const standings = computeStandings(matches, teamMap, fairPlay);
+
+  const isComplete = isGroupStageComplete(matches);
+  
+  const knockoutMatches = getSheetData("Matches")
+    .filter(m => String(m.tournamentId) === String(tournamentId) && m.stage !== "GROUP");
+
+  const goals = getSheetData("Goals")
+  .filter(g => matches.some(m => m.id === g.matchId)
+            || knockoutMatches.some(m => m.id === g.matchId));
+
+  var response = { matches, standings, isComplete, knockoutMatches, goals };
+  return response;
+
+}
+
+function getTournamentFormat(standings) {
+  const groupCount = Object.keys(standings).length;
+  const groupSize = Object.values(standings)[0].length;
+
+  return { groupCount, groupSize };
+}
+
 function hasMatches(tournamentId) {
   return getSheetData("Matches")
     .some(m => m.tournamentId === tournamentId && m.stage === "GROUP");
@@ -19,8 +60,10 @@ function isGroupStageComplete(matches) {
   return matches.every(m => m.played === true);
 }
 
-function computeStandings(matches, teamMap) {
+function computeStandings(matches, teamMap, fairPlay) {
   const groups = {};
+
+  const fairPlayByTeam = computeFairPlayByTeam(fairPlay);
 
   matches.forEach(m => {
     if (!groups[m.group]) groups[m.group] = {};
@@ -31,6 +74,14 @@ function computeStandings(matches, teamMap) {
     const teamBName = teamMap[m.teamB] || m.teamB;
 
     [teamAName, teamBName].forEach(team => {
+      const teamId = team === teamAName ? m.teamA : m.teamB;
+
+      const fp = fairPlayByTeam[teamId] || {
+        red: 0,
+        seriousRed: 0,
+        solidarity: 0
+      };
+
       if (!g[team]) {
         g[team] = {
           team,
@@ -40,8 +91,15 @@ function computeStandings(matches, teamMap) {
           loss: 0,
           gf: 0,
           ga: 0,
-          pts: 0
-        };
+          pts: 0,    
+          redCards: fp.red,
+          seriousRedCards: fp.seriousRed,
+          solidarityPoints: fp.solidarity,
+          fairPlayScore:
+          fp.solidarity
+          - fp.red * 3
+          - fp.seriousRed * 6
+            };
       }
     });
 
@@ -80,7 +138,8 @@ function computeStandings(matches, teamMap) {
       return (
         b.pts - a.pts ||
         (b.gf - b.ga) - (a.gf - a.ga) ||
-        b.gf - a.gf
+        b.gf - a.gf ||
+        b.fairPlayScore - a.fairPlayScore
       );
     });
   });
@@ -89,6 +148,66 @@ function computeStandings(matches, teamMap) {
 }
 
 function getQualifiedTeams(standings) {
+  const format = getTournamentFormat(standings);
+
+  if (format.groupCount === 2 && format.groupSize === 5){
+    return computeQualifiedTeamsForTwoGroupsWithFiveTeams(standings);
+  }
+
+  if (format.groupCount === 2 && (format.groupSize === 4 || format.groupSize === 3)){
+    return computeQualifiedTeamsForDirectSemiFinals(standings);
+  }
+
+  if (format.groupCount === 3){
+    return computeQualifiedTeamsForThreeGroups(standings);
+  } 
+}
+
+function computeQualifiedTeamsForTwoGroupsWithFiveTeams(standings){
+  const qualified = [];
+
+  Object.keys(standings).forEach(group => {
+    const teams = standings[group];
+
+    for (let i = 0; i < 4; i++) {
+      if (!teams[i]) continue;
+
+      qualified.push({
+        ...teams[i],
+        group,
+        rank: i + 1
+      });
+    }
+  });
+
+  return {
+    teams: qualified,
+    tieBreakOccurred: false
+  };
+}
+
+function computeQualifiedTeamsForDirectSemiFinals(standings){
+  const qualified = [];
+
+  Object.keys(standings).forEach(group => {
+    const teams = standings[group];
+
+    for (let i = 0; i < 2; i++) {
+      qualified.push({
+        ...teams[i],
+        group,
+        rank: i + 1
+      });
+    }
+  });
+
+  return {
+    teams: qualified,
+    tieBreakOccurred: false
+  };
+}
+
+function computeQualifiedTeamsForThreeGroups(standings) {  
   const qualified = [];
   const thirdPlace = [];
 
@@ -119,18 +238,24 @@ function getQualifiedTeams(standings) {
   });
 
   let tieBreakOccurred = false;
-  // 🔥 tri des meilleurs 3e
+  //  tri des meilleurs 3e
   thirdPlace.sort((a, b) => {
+    // points
     if (b.pts !== a.pts) return b.pts - a.pts;
 
+    // différence de buts
     const diffA = a.gf - a.ga;
     const diffB = b.gf - b.ga;
 
     if (diffB !== diffA) return diffB - diffA;
 
+    // buts marqués
     if (b.gf !== a.gf) return b.gf - a.gf;
 
-    // ⚠️ égalité parfaite → tirage
+    if (b.fairPlayScore !== a.fairPlayScore)
+      return b.fairPlayScore - a.fairPlayScore;
+
+    // ⚠️ égalité parfaite → tirage aléatoire
     tieBreakOccurred = true;
     return Math.random() - 0.5;
   });
@@ -142,4 +267,28 @@ function getQualifiedTeams(standings) {
     teams: qualified,
     tieBreakOccurred: tieBreakOccurred
   };
+}
+
+function getTournamentTeams(matchId){
+  const matches = getSheetData("Matches");
+  const match = matches.find(m => String(m.id) === String(matchId));
+
+  if (!match) {
+    throw new Error("Match introuvable.");
+  }
+
+  const tournamentId = match.tournamentId;
+
+  const tournamentTeams = getSheetData("TournamentTeams")
+    .filter(tt => String(tt.tournamentId) === String(tournamentId));
+
+  const teams = getSheetData("Teams");
+
+  return tournamentTeams.map(tt => {
+    const team = teams.find(t => String(t.id) === String(tt.teamId));
+    return {
+      id: tt.teamId,
+      name: team ? team.name : tt.teamId
+    };
+  }).sort((a, b) => a.name.localeCompare(b.name));  
 }
