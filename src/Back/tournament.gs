@@ -292,3 +292,15 @@ function getTournamentTeams(matchId){
     };
   }).sort((a, b) => a.name.localeCompare(b.name));  
 }
+
+function getTeamsIdByName() {
+  const teams = getSheetData("Teams");
+
+  const teamIdByName = {};
+
+  teams.forEach(t => {
+    teamIdByName[t.name] = t.id;
+  });
+
+  return teamIdByName;
+}

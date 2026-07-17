@@ -1,0 +1,48 @@
+<script>
+
+  function loadScorers() {
+    const tournamentId = document.getElementById("tournamentSelect").value;
+
+    showLoader();
+
+    google.script.run
+      .withSuccessHandler(renderScorers)
+      .computeTopScorers(tournamentId);
+  }
+
+  function renderScorers(data) {
+    hideLoader();
+    const container = document.getElementById("scorers");
+
+    if (!data || data.length === 0) {
+      container.innerHTML = "<p>Aucun buteur</p>";
+      return;
+    }
+
+    let html = `
+    <table>
+      <tr>
+        <th>#</th>
+        <th>Joueur</th>
+        <th>Equipe</th>
+        <th>Buts</th>
+      </tr>
+  `;
+
+    data.forEach((s, i) => {
+      html += `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${s.player}</td>
+        <td>${s.team}</td>
+        <td>${s.goals}</td>
+      </tr>
+    `;
+    });
+
+    html += "</table>";
+
+    container.innerHTML = html;
+  }
+
+</script>

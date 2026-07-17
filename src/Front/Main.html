@@ -1,0 +1,127 @@
+<script>
+
+  let goalsData = [];
+
+  function init() {
+    showLoader();
+
+    google.script.run
+      .withSuccessHandler(function (res) {
+        hideLoader();
+        if (!res) {
+          alert("getTournaments returned NULL / UNDEFINED");
+          return;
+        }
+        const select = document.getElementById("tournamentSelect");
+
+        select.innerHTML = res
+          .map(t => `<option value="${t.id}">${t.name}</option>`)
+          .join("");
+      })
+      .withFailureHandler(function (err) {
+        hideLoader();
+        console.error("BACKEND ERROR:", err);
+        alert("Backend error: " + err.message);
+      })
+      .getTournaments();
+  }
+
+  function loadTournament() {
+    const tournamentId = document.getElementById("tournamentSelect").value;
+
+    showLoader();
+
+    google.script.run
+      .withSuccessHandler(function (res) {
+        hideLoader();
+
+        if (!res || !res.matches) {
+          alert("No matches returned");
+          return;
+        }
+        goalsData = res.goals || [];
+
+        window.currentGroupMatches = res.matches || [];
+        window.currentKnockoutMatches = res.knockoutMatches || [];
+
+        renderMatches(res.matches);
+        renderStandings(res.standings);
+        renderBracket(res.knockoutMatches);
+
+        const btn = document.getElementById("btnQuarters");
+
+        if (res.isComplete) {
+          console.log("btn quarter to display");
+          btn.style.display = "inline-block";
+        } else {
+          btn.style.display = "none";
+        }
+      })
+      .withFailureHandler(function (err) {
+        hideLoader();
+        console.error(err);
+        alert(err.message);
+      })
+      .getTournamentData(tournamentId);
+  }
+
+  function generateMatches() {
+    const tournamentId = document.getElementById("tournamentSelect").value;
+
+    showLoader();
+
+    google.script.run
+      .withSuccessHandler(function (res) {
+        hideLoader();
+        console.log("GENERATE OK:", res);
+        alert("Matchs générés !");
+        loadTournament();
+      })
+      .withFailureHandler(function (err) {
+        hideLoader();
+        console.error(err);
+        alert(err.message);
+      })
+      .generateGroupMatches(tournamentId);
+  }
+
+  function showTab(tab) {
+    document.getElementById("groupsTab").style.display = "none";
+    document.getElementById("knockoutTab").style.display = "none";
+    document.getElementById("statsTab").style.display = "none";
+
+    // reset active
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+
+    if (tab === "groups") {
+      document.getElementById("groupsTab").style.display = "block";
+      document.getElementById("tab-groups").classList.add("active");
+      loadTournament();
+    }
+    if (tab === "knockout") {
+      document.getElementById("knockoutTab").style.display = "block";
+      document.getElementById("tab-knockout").classList.add("active");
+      loadTournament();
+    }
+    if (tab === "stats") {
+      document.getElementById("statsTab").style.display = "block";
+      document.getElementById("tab-stats").classList.add("active");
+      loadScorers();
+    }
+  }
+
+  function onTournamentChange() {
+    showTab('groups');
+  }
+
+  function showLoader() {
+    document.getElementById("loader").style.display = "flex";
+  }
+
+  function hideLoader() {
+    document.getElementById("loader").style.display = "none";
+  }
+
+  window.onload = init;
+
+</script>
