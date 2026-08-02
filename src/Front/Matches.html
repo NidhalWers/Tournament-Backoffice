@@ -11,7 +11,7 @@
           <span>${m.teamA || "-"}</span>
           <div class="score-actions">
             <input type="number" min="0" id="a_${m.id}" value="${m.scoreA || ""}" ${disabled}/>
-            <button class="forfeit-btn" ${disabled} onclick="setForfeit('${m.id}', 'A')">Forfait</button>
+            <button class="forfeit-btn" ${disabled} onclick="setForfeit('${m.id}', 'A')">Forfeit</button>
           </div>
         </div>
 
@@ -19,7 +19,7 @@
           <span>${m.teamB || "-"}</span>
           <div class="score-actions">
             <input type="number" min="0" id="b_${m.id}" value="${m.scoreB || ""}" ${disabled}/>
-            <button class="forfeit-btn" ${disabled} onclick="setForfeit('${m.id}', 'B')">Forfait</button>
+            <button class="forfeit-btn" ${disabled} onclick="setForfeit('${m.id}', 'B')">Forfeit</button>
           </div>
         </div>
 
@@ -51,7 +51,7 @@
 
     Object.keys(groups).forEach(group => {
       const title = document.createElement("h3");
-      title.innerText = "Groupe " + group;
+      title.innerText = "Group " + group;
       container.appendChild(title);
 
       groups[group].forEach(m => {
@@ -63,7 +63,7 @@
         const goalsA = goals.filter(g => g.team === "A");
         const goalsB = goals.filter(g => g.team === "B");
 
-        // équilibrer affichage ligne par ligne
+        // Balance the display row by row
         const maxGoals = Math.max(goalsA.length, goalsB.length);
 
         let goalsHtml = "";
@@ -81,7 +81,7 @@
           <div class="match-line">
             
             <span class="team team-left">${m.teamAName}</span>
-            <button class="forfeit-btn" ${disabled} onclick="setForfeit('${m.id}', 'A')">Forfait</button>
+            <button class="forfeit-btn" ${disabled} onclick="setForfeit('${m.id}', 'A')">Forfeit</button>
 
             <input class="score" ${disabled} type="number" min="0" step="1" id="a_${m.id}" value="${m.scoreA || ""}" />
             
@@ -89,7 +89,7 @@
 
             <input class="score" ${disabled} type="number" min="0" step="1" id="b_${m.id}" value="${m.scoreB || ""}" />
 
-            <button class="forfeit-btn" ${disabled} onclick="setForfeit('${m.id}', 'B')">Forfait</button>
+            <button class="forfeit-btn" ${disabled} onclick="setForfeit('${m.id}', 'B')">Forfeit</button>
             <span class="team team-right">${m.teamBName}</span>
             
             <button class="save-btn" ${disabled} onclick="saveScore('${m.id}')">Save Score</button>
@@ -113,7 +113,7 @@
 
     Object.keys(standings).forEach(group => {
       const title = document.createElement("h3");
-      title.innerText = "Classement Groupe " + group;
+      title.innerText = "Group " + group + " Standings";
       container.appendChild(title);
 
       const table = document.createElement("table");
@@ -123,12 +123,12 @@
       <tr>
         <th>Team</th>
         <th>Pts</th>
-        <th>J</th>
-        <th>G</th>
-        <th>N</th>
-        <th>P</th>
-        <th>BP</th>
-        <th>BC</th>
+        <th>MP</th>
+        <th>W</th>
+        <th>D</th>
+        <th>L</th>
+        <th>GF</th>
+        <th>GA</th>
         <th>+/-</th>
         <th>FP</th>
       </tr>
@@ -158,7 +158,7 @@
   }
 
   function setForfeit(matchId, forfeitingTeam) {
-    if (!confirm("Confirmer le forfait ?")) return;
+    if (!confirm("Confirm the forfeit?")) return;
 
     let scoreA = 0;
     let scoreB = 0;

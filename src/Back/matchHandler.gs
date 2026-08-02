@@ -8,8 +8,8 @@ function generateGroupMatches(tournamentId) {
     .filter(m => String(m.tournamentId) === String(tournamentId));
 
   if (existing.length > 0) {
-    Logger.log("Les matchs de poules existent déjà !");
-    throw new Error("Les matchs de poules existent déjà !");
+    Logger.log("Group-stage matches already exist!");
+    throw new Error("Group-stage matches already exist!");
   }
 
   const sheet = ss.getSheetByName("TournamentTeams");
@@ -77,10 +77,10 @@ function generateRoundRobin(teams) {
   const rounds = [];
   const n = teams.length;
 
-  // clone
+  // Clone
   let list = [...teams];
 
-  // si impair → bye
+  // If odd -> bye
   if (n % 2 === 1) {
     list.push(null);
   }
@@ -102,7 +102,7 @@ function generateRoundRobin(teams) {
 
     rounds.push(roundMatches);
 
-    // rotation (sauf premier)
+    // Rotate (except the first item)
     list.splice(1, 0, list.pop());
   }
 
@@ -119,8 +119,8 @@ function generateFinalPhase(tournamentId) {
     ["QF", "SF", "FINAL"].includes(m.stage));
 
   if (existing.length > 0) {
-    Logger.log("Les matchs de phases finales existent déjà !");
-    throw new Error("Les matchs de phases finales existent déjà !");
+    Logger.log("Knockout-stage matches already exist!");
+    throw new Error("Knockout-stage matches already exist!");
   }
 
   const qualifiedData = getQualifiedTeams(data.standings);
@@ -143,7 +143,7 @@ function generateSemiFinalBracket(tournamentId, sheet, qualifiedData) {
   const qualified = qualifiedData.teams;
 
   // =========================================
-  // récupérer les seeds
+  // Retrieve the seeds
   // =========================================
 
   const groupA = qualified.filter(t => t.group === "A");
@@ -156,7 +156,7 @@ function generateSemiFinalBracket(tournamentId, sheet, qualifiedData) {
   const B2 = groupB.find(t => t.rank === 2);
 
   // =========================================
-  // Finale
+  // Final
   // =========================================
 
   const finalId = Utilities.getUuid();
@@ -176,7 +176,7 @@ function generateSemiFinalBracket(tournamentId, sheet, qualifiedData) {
   ]];
 
   // =========================================
-  // Demi-finales
+  // Semifinals
   // =========================================
 
   const sfMatches = [
@@ -254,7 +254,7 @@ function generateQuarterFinalBracket(tournamentId, sheet, qualifiedData){
     ""  // nextSlot
   ]];
 
-  // créer SF vides
+  // Create empty semifinals
   const sf1Id = Utilities.getUuid();
   const sf2Id = Utilities.getUuid();
 
@@ -287,7 +287,7 @@ function generateQuarterFinalBracket(tournamentId, sheet, qualifiedData){
     ]
   ];
 
-  // créer QF liés
+  // Create linked quarterfinals
   const qfMatches = [];
 
   pairings.forEach((pair, index) => {
@@ -343,7 +343,7 @@ function generateQuarterFinalBracket(tournamentId, sheet, qualifiedData){
 }
 
 function drawQuarterFinals(qualified) {
-  // tri global
+  // Overall ranking
   const sorted = [...qualified].sort((a, b) => {
     return (
       b.pts - a.pts ||
@@ -356,7 +356,7 @@ function drawQuarterFinals(qualified) {
   const top = sorted.slice(0, 4);
   const bottom = sorted.slice(4);
 
-  // shuffle bottom (aléatoire)
+  // Shuffle the bottom half (randomly)
   for (let i = bottom.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [bottom[i], bottom[j]] = [bottom[j], bottom[i]];
@@ -367,7 +367,7 @@ function drawQuarterFinals(qualified) {
   top.forEach(teamA => {
     let opponentIndex = bottom.findIndex(teamB => teamB.group !== teamA.group);
 
-    // si aucun trouvé (cas rare), fallback
+    // If none is found (rare case), use the fallback
     if (opponentIndex === -1) {
       opponentIndex = 0;
     }
@@ -422,7 +422,7 @@ function saveScore(matchId, scoreA, scoreB, penaltyWinner) {
         winner = teamB;
       } else {
         if (!penaltyWinner) {
-          throw new Error("Match nul : vainqueur TAB requis");
+          throw new Error("Draw: a penalty shootout winner is required");
         }
 
         winner = penaltyWinner === "A" ? teamA : teamB;
@@ -463,23 +463,23 @@ function registerScorers(matchId, scoreA, scoreB, goals){
 
   if (!Number.isInteger(parsedScoreA) || parsedScoreA < 0 ||
       !Number.isInteger(parsedScoreB) || parsedScoreB < 0) {
-    throw new Error("Scores invalides");
+    throw new Error("Invalid scores");
   }
 
   if (parsedScoreA === 0 && parsedScoreB === 0) {
-    // pas de buteur
+    // No scorer
     return;
   }
 
   if (!Array.isArray(goals)) {
-    throw new Error("Liste des buteurs invalide");
+    throw new Error("Invalid scorer list");
   }
 
   const matches = getSheetData("Matches");
   const match = matches.find(m => String(m.id) === String(matchId));
 
   if (!match) {
-    throw new Error("Match introuvable");
+    throw new Error("Match not found");
   }
 
   const tournamentId = match.tournamentId;
@@ -490,12 +490,12 @@ function registerScorers(matchId, scoreA, scoreB, goals){
   const goalCountByTeam = { A: 0, B: 0 };
   const rows = goals.map(g => {
     if (!g || (g.team !== "A" && g.team !== "B")) {
-      throw new Error("Équipe du buteur invalide");
+      throw new Error("Invalid scorer team");
     }
 
     const playerName = normalizePlayerName(g.player);
     if (!playerName) {
-      throw new Error("Nom du buteur manquant");
+      throw new Error("Missing scorer name");
     }
 
     goalCountByTeam[g.team]++;
@@ -511,7 +511,7 @@ function registerScorers(matchId, scoreA, scoreB, goals){
   });
 
   if (goalCountByTeam.A > parsedScoreA || goalCountByTeam.B > parsedScoreB) {
-    throw new Error("Le nombre de buteurs dépasse le score du match");
+    throw new Error("The number of scorers exceeds the match score");
   }
 
   if (rows.length > 0) {
@@ -530,7 +530,7 @@ function getTeamNamesByMatchId(matchId) {
 
   const match = matches.find(m => String(m.id) === String(matchId));
   if (!match) {
-    throw new Error("Match introuvable");
+    throw new Error("Match not found");
   }
 
   const teamMap = {};

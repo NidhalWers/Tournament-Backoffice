@@ -58,8 +58,8 @@ function computeTeamsRank(tournamentId, teamIdByName){
       let teamAId = m.teamA;
       let teamBId = m.teamB;
 
-      // Les matchs de groupes contiennent des ids,
-      // les matchs à élimination contiennent actuellement des noms.
+      // Group-stage matches contain IDs,
+      // while knockout matches currently contain names.
       if (teamIdByName[teamAId]) {
         teamAId = teamIdByName[teamAId];
       }
@@ -76,7 +76,7 @@ function computeTeamsRank(tournamentId, teamIdByName){
         teamStage[teamBId] = Math.max(teamStage[teamBId] || 0, rank);
       }
 
-      // Bonus : vainqueur du tournoi
+      // Bonus: tournament winner
       if (m.stage === "FINAL" && m.played) {
 
         let winner = null;
@@ -88,7 +88,7 @@ function computeTeamsRank(tournamentId, teamIdByName){
           winner = teamBId;
         }
         else {
-          // Match nul -> vainqueur aux TAB
+          // Draw -> penalty shootout winner
           if (m.penaltyWinner === "A") {
             winner = teamAId;
           }

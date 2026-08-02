@@ -40,10 +40,10 @@
     google.script.run
       .withSuccessHandler(function (res) {
         hideLoader();
-        alert("Phases finale générés !");
+        alert("Knockout stage generated!");
 
         if (res && res.tieBreakDetected) {
-          alert("⚖️ Égalité parfaite entre équipes à la 3eme place — tirage au sort effectué");
+          alert("⚖️ Third-place teams were completely tied — a random draw was performed");
         }
 
         loadTournament();

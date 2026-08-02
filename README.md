@@ -6,7 +6,7 @@ The project uses a Google Spreadsheet as its database and provides a Web App int
 
 It supports:
 
-- Tournament and team management
+- Tournament selection and spreadsheet-based team configuration
 - Automatic group-stage match generation
 - Match score management
 - Automatic group standings
@@ -54,16 +54,16 @@ The application is built entirely on top of the Google ecosystem:
 - **HTML / CSS / JavaScript** provide the Web App interface.
 - `google.script.run` connects the frontend to the Apps Script backend.
 
-The objective is to allow tournament organizers to manage the entire competition from a single interface without requiring a traditional database or external server.
+The objective is to allow tournament organizers to run the competition from a single interface without requiring a traditional database or external server. Tournament and team records are configured directly in the spreadsheet before the competition begins.
 
 The tournament workflow is:
 
 ```text
-Tournament creation
+Tournament creation in Google Sheets
         ↓
-Team registration
+Team registration in Google Sheets
         ↓
-Manual group assignment
+Manual group assignment in Google Sheets
         ↓
 Group match generation
         ↓
@@ -142,12 +142,12 @@ For each team, the following statistics are calculated:
 | Statistic | Description |
 |---|---|
 | Pts | Points |
-| J | Matches played |
-| G | Wins |
-| N | Draws |
-| P | Losses |
-| BP | Goals scored |
-| BC | Goals conceded |
+| MP | Matches played |
+| W | Wins |
+| D | Draws |
+| L | Losses |
+| GF | Goals scored |
+| GA | Goals conceded |
 | +/- | Goal difference |
 | FP | Fair Play score |
 
@@ -307,7 +307,7 @@ Players are primarily ranked by:
 Number of goals scored
 ```
 
-If two players have scored the same number of goals, the progress of their team in the tournament can be used as an additional ranking criterion.
+If two players have scored the same number of goals, the progress of their team in the tournament is used as an additional ranking criterion.
 
 Tournament progression is represented internally using a stage rank:
 
@@ -373,17 +373,16 @@ Fair Play events are stored in the `FairPlay` sheet using the team ID.
 
 # ⚖️ Tie-Breaking Rules
 
-Teams are ranked using the following criteria:
+Group standings use the following criteria:
 
 1. Points
 2. Goal difference
 3. Goals scored
 4. Fair Play score
-5. Random draw in case of a complete tie
 
-The same criteria are used when comparing teams from different groups, such as determining the best third-placed teams.
+The same criteria are used to compare third-placed teams from different groups. If those criteria are all identical, the application performs a random draw.
 
-If all sporting and Fair Play criteria are identical, the application performs a random draw.
+The quarter-final draw uses points, goal difference, and goals scored to split qualified teams into a top half and a bottom half. The bottom half is then shuffled, and the draw avoids same-group pairings whenever possible.
 
 ---
 
@@ -601,6 +600,7 @@ Associates teams with tournaments and groups.
 Example columns:
 
 ```text
+id
 tournamentId
 teamId
 group
@@ -636,6 +636,7 @@ scoreB
 played
 nextMatchId
 nextSlot
+penaltyWinner
 ```
 
 Possible stages:
@@ -655,12 +656,18 @@ FINAL
 
 Stores registered goal scorers.
 
-The sheet associates each goal with:
+Columns:
 
-- a tournament;
-- a match;
-- a team;
-- a player.
+```text
+id
+tournamentId
+matchId
+team
+playerName
+teamName
+```
+
+The `team` value identifies the match slot (`A` or `B`), while `teamName` stores the corresponding team name.
 
 Goal scorer data is used to calculate the individual top scorer ranking.
 
@@ -727,11 +734,13 @@ Make sure the include names used by `Index.html` match the Apps Script HTML file
 
 ## 4. Initialize the spreadsheet
 
-Run the spreadsheet initialization function provided by:
+Run the following spreadsheet initialization function from the Apps Script editor:
 
 ```text
-spreadsheetInitialization.gs
+initializeSpreadsheet()
 ```
+
+The function is defined in `spreadsheetInitialization.gs`.
 
 This creates the required sheets and headers when they do not already exist.
 
@@ -771,10 +780,10 @@ Open the Web App and select the tournament from the dropdown.
 
 ## Step 2 — Generate group matches
 
-Open the **Groupes** tab and click:
+Open the **Groups** tab and click:
 
 ```text
-Générer les matchs de groupes
+Generate Group Matches
 ```
 
 The application generates all matches based on the groups configured in `TournamentTeams`.
@@ -821,7 +830,7 @@ The interface displays:
 Once every group-stage match has been completed, open:
 
 ```text
-Phases finales
+Knockout Stage
 ```
 
 and generate the final phase.
@@ -905,10 +914,10 @@ No external database or backend server is required.
 Possible future improvements include:
 
 - [ ] Additional tournament formats
-- [ ] Final standings through several criterias
+- [ ] Final standings using several criteria
 - [ ] More advanced knockout bracket visualization
 - [ ] Team and player management directly from the Web App
-- [ ] Automated tests for business logic
+- [X] Automated tests for business logic
 - [ ] Exportable tournament reports
 - [ ] Tournament administration roles
 

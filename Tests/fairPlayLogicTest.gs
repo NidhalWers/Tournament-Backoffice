@@ -1,7 +1,7 @@
 function testFairPlayLogic() {
-  runTestSuite("Logique du fair-play", [
+  runTestSuite("Fair-play logic", [
     {
-      name: "cumule les sanctions et la solidarité par équipe",
+      name: "accumulates penalties and solidarity points by team",
       test: function() {
         const result = computeFairPlayByTeam([
           { teamId: "A", redCard: 1, seriousRedCard: 0, solidarityPoints: 2 },
@@ -16,7 +16,7 @@ function testFairPlayLogic() {
       }
     },
     {
-      name: "traite les valeurs absentes comme des zéros",
+      name: "treats missing values as zero",
       test: function() {
         const result = computeFairPlayByTeam([
           { teamId: "A" },
@@ -29,7 +29,7 @@ function testFairPlayLogic() {
       }
     },
     {
-      name: "renvoie un résultat vide sans événements",
+      name: "returns an empty result when there are no events",
       test: function() {
         assertDeepEquals({}, computeFairPlayByTeam([]));
       }

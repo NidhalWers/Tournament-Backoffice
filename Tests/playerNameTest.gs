@@ -1,19 +1,19 @@
 function testNormalizePlayerNames() {
-  runTestSuite("Normalisation des noms de buteurs", [
+  runTestSuite("Scorer name normalization", [
     {
-      name: "uniformise minuscules et majuscules",
+      name: "standardizes lowercase and uppercase letters",
       test: function() {
         assertEquals("Jean", normalizePlayerName("jEAN"));
       }
     },
     {
-      name: "supprime les espaces superflus",
+      name: "removes extra spaces",
       test: function() {
         assertEquals("Jean Pierre", normalizePlayerName("  JEAN   PIERRE  "));
       }
     },
     {
-      name: "gère les prénoms composés et les apostrophes",
+      name: "handles compound first names and apostrophes",
       test: function() {
         assertEquals("Jean-Pierre D'Angelo", normalizePlayerName("jean-pierre d'ANGELO"));
         assertEquals("D'Angelo", normalizePlayerName("d’angelo"));
@@ -21,14 +21,14 @@ function testNormalizePlayerNames() {
       }
     },
     {
-      name: "refuse les valeurs non textuelles ou vides",
+      name: "rejects non-string or empty values",
       test: function() {
         assertEquals("", normalizePlayerName(null));
         assertEquals("", normalizePlayerName("   "));
       }
     },
     {
-      name: "produit la même clé quelle que soit la casse",
+      name: "produces the same key regardless of case",
       test: function() {
         assertEquals(getPlayerNameKey("JEAN"), getPlayerNameKey("jean"));
         assertEquals(getPlayerNameKey("d'angelo"), getPlayerNameKey("D’ANGELO"));

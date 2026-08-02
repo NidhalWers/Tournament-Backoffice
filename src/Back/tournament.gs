@@ -19,7 +19,7 @@ function getTournamentData(tournamentId) {
   const teamMap = {};
   teams.forEach(t => teamMap[t.id] = t.name);
 
-  // enrichir les matchs
+  // Enrich matches
   matches.forEach(m => {
     m.teamAName = teamMap[m.teamA] || m.teamA;
     m.teamBName = teamMap[m.teamB] || m.teamB;
@@ -214,7 +214,7 @@ function computeQualifiedTeamsForThreeGroups(standings) {
   Object.keys(standings).forEach(group => {
     const groupTeams = standings[group];
 
-    // 1er et 2e
+    // First and second place
     qualified.push({
       ...groupTeams[0],
       group,
@@ -227,7 +227,7 @@ function computeQualifiedTeamsForThreeGroups(standings) {
       rank: 2
     });
 
-    // 3e
+    // Third place
     if (groupTeams[2]) {
       thirdPlace.push({
         ...groupTeams[2],
@@ -238,29 +238,29 @@ function computeQualifiedTeamsForThreeGroups(standings) {
   });
 
   let tieBreakOccurred = false;
-  //  tri des meilleurs 3e
+  // Rank the best third-place teams
   thirdPlace.sort((a, b) => {
-    // points
+    // Points
     if (b.pts !== a.pts) return b.pts - a.pts;
 
-    // différence de buts
+    // Goal difference
     const diffA = a.gf - a.ga;
     const diffB = b.gf - b.ga;
 
     if (diffB !== diffA) return diffB - diffA;
 
-    // buts marqués
+    // Goals scored
     if (b.gf !== a.gf) return b.gf - a.gf;
 
     if (b.fairPlayScore !== a.fairPlayScore)
       return b.fairPlayScore - a.fairPlayScore;
 
-    // ⚠️ égalité parfaite → tirage aléatoire
+    // ⚠️ Complete tie -> random draw
     tieBreakOccurred = true;
     return Math.random() - 0.5;
   });
 
-  // prendre les 2 meilleurs
+  // Keep the best two
   qualified.push(...thirdPlace.slice(0, 2));
 
   return {
@@ -274,7 +274,7 @@ function getTournamentTeams(matchId){
   const match = matches.find(m => String(m.id) === String(matchId));
 
   if (!match) {
-    throw new Error("Match introuvable.");
+    throw new Error("Match not found.");
   }
 
   const tournamentId = match.tournamentId;

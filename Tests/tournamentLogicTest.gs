@@ -1,7 +1,7 @@
 function testTournamentLogic() {
-  runTestSuite("Logique du tournoi", [
+  runTestSuite("Tournament logic", [
     {
-      name: "détecte le format à partir du classement",
+      name: "detects the format from the standings",
       test: function() {
         const standings = {
           A: [{}, {}, {}],
@@ -12,7 +12,7 @@ function testTournamentLogic() {
       }
     },
     {
-      name: "considère la phase de groupes complète uniquement si tous les matchs sont joués",
+      name: "considers the group stage complete only when every match has been played",
       test: function() {
         assertTrue(isGroupStageComplete([]));
         assertTrue(isGroupStageComplete([{ played: true }, { played: true }]));
@@ -20,7 +20,7 @@ function testTournamentLogic() {
       }
     },
     {
-      name: "calcule victoires, nul, buts et points",
+      name: "calculates wins, draws, goals, and points",
       test: function() {
         const matches = [
           groupMatch("A", "1", "2", 2, 1, true),
@@ -45,7 +45,7 @@ function testTournamentLogic() {
       }
     },
     {
-      name: "départage à la différence de buts puis aux buts marqués",
+      name: "breaks ties by goal difference and then goals scored",
       test: function() {
         const matches = [
           groupMatch("A", "1", "2", 3, 1, true),
@@ -57,7 +57,7 @@ function testTournamentLogic() {
       }
     },
     {
-      name: "utilise le fair-play après les critères sportifs",
+      name: "uses fair play after sporting criteria",
       test: function() {
         const matches = [groupMatch("A", "1", "2", 0, 0, false)];
         const fairPlay = [
@@ -72,7 +72,7 @@ function testTournamentLogic() {
       }
     },
     {
-      name: "qualifie les deux premiers de chaque groupe pour les demi-finales",
+      name: "qualifies the top two teams from each group for the semifinals",
       test: function() {
         const standings = {
           A: [{ team: "A1" }, { team: "A2" }, { team: "A3" }],
@@ -88,7 +88,7 @@ function testTournamentLogic() {
       }
     },
     {
-      name: "sélectionne les deux meilleurs troisièmes selon les critères sportifs",
+      name: "selects the two best third-place teams using sporting criteria",
       test: function() {
         const standings = {
           A: rankedGroup("A", { pts: 4, gf: 3, ga: 2, fairPlayScore: 0 }),

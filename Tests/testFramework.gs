@@ -1,8 +1,8 @@
 /**
- * Exécute une suite de tests et produit un résumé dans les logs.
+ * Runs a test suite and writes a summary to the logs.
  *
- * @param {string} suiteName Nom de la suite.
- * @param {Array<{name: string, test: Function}>} tests Tests à exécuter.
+ * @param {string} suiteName Suite name.
+ * @param {Array<{name: string, test: Function}>} tests Tests to run.
  */
 function runTestSuite(suiteName, tests) {
   let passed = 0;
@@ -34,18 +34,18 @@ function runTestSuite(suiteName, tests) {
   });
 
   Logger.log("");
-  Logger.log(`Résultat : ${passed} réussi(s), ${failed} échoué(s)`);
+  Logger.log(`Result: ${passed} passed, ${failed} failed`);
 
   if (failures.length > 0) {
     Logger.log("");
-    Logger.log("Détail des erreurs :");
+    Logger.log("Error details:");
 
     failures.forEach(failure => {
       Logger.log(`- ${failure.name}: ${failure.message}`);
     });
 
     throw new Error(
-      `${suiteName} : ${failed} test(s) en échec sur ${tests.length}.`
+      `${suiteName}: ${failed} of ${tests.length} test(s) failed.`
     );
   }
 
@@ -59,15 +59,15 @@ function runTestSuite(suiteName, tests) {
 
 
 /**
- * Vérifie une égalité stricte.
+ * Checks strict equality.
  */
 function assertEquals(expected, actual, message) {
   if (expected !== actual) {
     throw new Error(
       buildAssertionMessage(
         message,
-        `Valeur attendue : ${formatTestValue(expected)}`,
-        `Valeur obtenue : ${formatTestValue(actual)}`
+        `Expected value: ${formatTestValue(expected)}`,
+        `Actual value: ${formatTestValue(actual)}`
       )
     );
   }
@@ -75,7 +75,7 @@ function assertEquals(expected, actual, message) {
 
 
 /**
- * Vérifie deux valeurs avec une tolérance numérique.
+ * Compares two values with a numeric tolerance.
  */
 function assertAlmostEquals(expected, actual, tolerance = 0.000001, message) {
   if (
@@ -85,8 +85,8 @@ function assertAlmostEquals(expected, actual, tolerance = 0.000001, message) {
     throw new Error(
       buildAssertionMessage(
         message,
-        `Valeur attendue : ${expected} ± ${tolerance}`,
-        `Valeur obtenue : ${actual}`
+        `Expected value: ${expected} ± ${tolerance}`,
+        `Actual value: ${actual}`
       )
     );
   }
@@ -94,7 +94,7 @@ function assertAlmostEquals(expected, actual, tolerance = 0.000001, message) {
 
 
 /**
- * Compare profondément des tableaux ou des objets simples.
+ * Deeply compares arrays or plain objects.
  */
 function assertDeepEquals(expected, actual, message) {
   const expectedJson = JSON.stringify(expected);
@@ -104,8 +104,8 @@ function assertDeepEquals(expected, actual, message) {
     throw new Error(
       buildAssertionMessage(
         message,
-        `Valeur attendue : ${expectedJson}`,
-        `Valeur obtenue : ${actualJson}`
+        `Expected value: ${expectedJson}`,
+        `Actual value: ${actualJson}`
       )
     );
   }
@@ -113,19 +113,19 @@ function assertDeepEquals(expected, actual, message) {
 
 
 /**
- * Vérifie qu'une condition est vraie.
+ * Checks that a condition is true.
  */
 function assertTrue(condition, message) {
   if (condition !== true) {
     throw new Error(
-      message || "La condition devait être vraie."
+      message || "The condition was expected to be true."
     );
   }
 }
 
 
 /**
- * Vérifie qu'une fonction déclenche une erreur.
+ * Checks that a function throws an error.
  */
 function assertThrows(callback, expectedMessage, message) {
   let thrownError = null;
@@ -138,7 +138,7 @@ function assertThrows(callback, expectedMessage, message) {
 
   if (!thrownError) {
     throw new Error(
-      message || "Une erreur était attendue, mais aucune n'a été levée."
+      message || "An error was expected, but none was thrown."
     );
   }
 
@@ -149,8 +149,8 @@ function assertThrows(callback, expectedMessage, message) {
     throw new Error(
       buildAssertionMessage(
         message,
-        `Message contenant : "${expectedMessage}"`,
-        `Message obtenu : "${thrownError.message}"`
+        `Message containing: "${expectedMessage}"`,
+        `Actual message: "${thrownError.message}"`
       )
     );
   }

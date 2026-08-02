@@ -1,7 +1,7 @@
 function testMatchLogic() {
-  runTestSuite("Logique des matchs", [
+  runTestSuite("Match logic", [
     {
-      name: "génère toutes les rencontres d'un groupe pair",
+      name: "generates every pairing for an even-sized group",
       test: function() {
         const rounds = generateRoundRobin(["A", "B", "C", "D"]);
         const matches = rounds.reduce((all, round) => all.concat(round), []);
@@ -12,7 +12,7 @@ function testMatchLogic() {
       }
     },
     {
-      name: "gère un groupe impair sans créer de match contre l'exempt",
+      name: "handles an odd-sized group without creating a match against the bye",
       test: function() {
         const rounds = generateRoundRobin(["A", "B", "C"]);
         const matches = rounds.reduce((all, round) => all.concat(round), []);
@@ -24,7 +24,7 @@ function testMatchLogic() {
       }
     },
     {
-      name: "ne modifie pas la liste d'équipes reçue",
+      name: "does not modify the provided team list",
       test: function() {
         const teams = ["A", "B", "C"];
 
@@ -34,7 +34,7 @@ function testMatchLogic() {
       }
     },
     {
-      name: "identifie uniquement les matchs à élimination directe",
+      name: "identifies only knockout matches",
       test: function() {
         ["QF", "SF", "FINAL"].forEach(stage => {
           assertTrue(isKnockoutMatch([stage], 0));

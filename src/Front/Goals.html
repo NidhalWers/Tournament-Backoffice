@@ -29,47 +29,47 @@
     const container = document.getElementById("goalInputs");
     container.innerHTML = "";
 
-    let html = "<h4>Équipe A</h4>";
+    let html = "<h4>Team A</h4>";
 
     for (let i = 0; i < scoreA; i++) {
-      html += `<input placeholder="Buteur A ${i + 1}" id="goalA_${i}" /><br>`;
+      html += `<input placeholder="Scorer A ${i + 1}" id="goalA_${i}" /><br>`;
     }
 
-    html += "<h4>Équipe B</h4>";
+    html += "<h4>Team B</h4>";
 
     for (let i = 0; i < scoreB; i++) {
-      html += `<input placeholder="Buteur B ${i + 1}" id="goalB_${i}" /><br>`;
+      html += `<input placeholder="Scorer B ${i + 1}" id="goalB_${i}" /><br>`;
     }
 
     html += `
     <hr>
 
-    <h4>Respect & Solidarité - Équipe A</h4>
+    <h4>Respect & Solidarity - Team A</h4>
 
-    Cartons rouges :
+    Red cards:
     <input type="number" id="redA" min="0" value="0"><br>
 
-    Rouges insulte / bagarre :
+    Red cards for insults or fighting:
     <input type="number" id="seriousRedA" min="0" value="0"><br>
 
     <hr>
 
-    <h4>Respect & Solidarité - Équipe B</h4>
+    <h4>Respect & Solidarity - Team B</h4>
 
-    Cartons rouges :
+    Red cards:
     <input type="number" id="redB" min="0" value="0"><br>
 
-    Rouges insulte / bagarre :
+    Red cards for insults or fighting:
     <input type="number" id="seriousRedB" min="0" value="0"><br>
 
     <hr>
 
-    <h4>Point solidarité</h4>
+    <h4>Solidarity Point</h4>
 
-    <label>Equipe ayant fourni un arbitre :</label><br>
+    <label>Team that provided a referee:</label><br>
 
     <select id="solidarityTeam">
-        <option value="">Aucune</option>
+        <option value="">None</option>
     </select>
   `;
 
@@ -81,7 +81,7 @@
     if (scoreA === scoreB && isKnockout) {
       html += `
       <hr>
-      <h4>Vainqueur aux tirs au but</h4>
+      <h4>Penalty Shootout Winner</h4>
 
       <label>
         <input type="radio" name="penaltyWinner" value="A">
@@ -131,7 +131,7 @@
       const checked = document.querySelector('input[name="penaltyWinner"]:checked');
 
       if (!checked) {
-        alert("Choisir un vainqueur aux tirs au but");
+        alert("Select a penalty shootout winner");
         return;
       }
 
@@ -145,7 +145,7 @@
         hideLoader();
 
         const goals = [];
-        // équipe A
+        // Team A
         for (let i = 0; i < currentScores.scoreA; i++) {
           const name = document.getElementById("goalA_" + i).value.trim();
           if (name) {
@@ -157,7 +157,7 @@
           }
         }
 
-        // équipe B
+        // Team B
         for (let i = 0; i < currentScores.scoreB; i++) {
           const name = document.getElementById("goalB_" + i).value.trim();
           if (name) {
@@ -181,7 +181,7 @@
           solidarityTeamId: document.getElementById("solidarityTeam").value
         };
 
-        // save
+        // Save
         showLoader();
 
         google.script.run

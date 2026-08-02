@@ -9,7 +9,7 @@
 
 <body>
 
-  <h2>Gestion tournoi</h2>
+  <h2>Tournament Management</h2>
 
   <div class="top-bar">
     <select id="tournamentSelect" onchange="onTournamentChange()"></select>
@@ -17,10 +17,10 @@
 
   <div class="tabs">
     <button id="tab-groups" class="tab active" onclick="showTab('groups')">
-      🏆 Groupes
+      🏆 Groups
     </button>
     <button id="tab-knockout" class="tab" onclick="showTab('knockout')">
-      ⚔️ Phases finales
+      ⚔️ Knockout Stage
     </button>
     <button id="tab-stats" class="tab" onclick="showTab('stats')">
       📊 Stats
@@ -31,7 +31,7 @@
 
   <div id="groupsTab">
     <div class="actions">
-      <button onclick="generateMatches()">Générer les matchs de groupes</button>
+      <button onclick="generateMatches()">Generate Group Matches</button>
     </div>
 
     <div class="groups-container" style="display:flex; gap:40px;">
@@ -43,7 +43,7 @@
   <div id="knockoutTab" style="display:none;">
     <div class="actions">
       <button id="btnQuarters" onclick="generateFinalPhase()">
-        Générer les phases finales
+        Generate Knockout Stage
       </button>
     </div>
 
@@ -52,15 +52,15 @@
 
   <div id="goalModal" class="modal" style="display:none;">
     <div class="modal-content">
-      <h3>Entrer les buteurs</h3>
+      <h3>Enter Scorers</h3>
       <div id="goalInputs"></div>
-      <button onclick="submitGoals()">Valider</button>
-      <button onclick="closeModal()">Annuler</button>
+      <button onclick="submitGoals()">Confirm</button>
+      <button onclick="closeModal()">Cancel</button>
     </div>
   </div>
 
   <div id="statsTab" style="display:none;">
-    <h2>Classement des buteurs</h2>
+    <h2>Top Scorers</h2>
     <div id="scorers"></div>
   </div>
 
