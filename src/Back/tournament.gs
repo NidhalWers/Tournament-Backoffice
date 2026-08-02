@@ -17,7 +17,7 @@ function getTournamentData(tournamentId) {
   const teams = getSheetData("Teams");
 
   const teamMap = {};
-  teams.forEach(t => teamMap[t.id] = t.name);
+  teams.forEach(t => teamMap[String(t.id)] = t.name);
 
   // Enrich matches
   matches.forEach(m => {
@@ -33,7 +33,12 @@ function getTournamentData(tournamentId) {
   const isComplete = isGroupStageComplete(matches);
   
   const knockoutMatches = getSheetData("Matches")
-    .filter(m => String(m.tournamentId) === String(tournamentId) && m.stage !== "GROUP");
+    .filter(m => String(m.tournamentId) === String(tournamentId) && m.stage !== "GROUP")
+    .map(m => ({
+      ...m,
+      teamAName: teamMap[String(m.teamA)] || m.teamA,
+      teamBName: teamMap[String(m.teamB)] || m.teamB
+    }));
 
   const goals = getSheetData("Goals")
   .filter(g => matches.some(m => m.id === g.matchId)
@@ -73,8 +78,10 @@ function computeStandings(matches, teamMap, fairPlay) {
     const teamAName = teamMap[m.teamA] || m.teamA;
     const teamBName = teamMap[m.teamB] || m.teamB;
 
-    [teamAName, teamBName].forEach(team => {
-      const teamId = team === teamAName ? m.teamA : m.teamB;
+    [
+      { team: teamAName, teamId: m.teamA },
+      { team: teamBName, teamId: m.teamB }
+    ].forEach(({ team, teamId }) => {
 
       const fp = fairPlayByTeam[teamId] || {
         red: 0,
@@ -85,6 +92,7 @@ function computeStandings(matches, teamMap, fairPlay) {
       if (!g[team]) {
         g[team] = {
           team,
+          teamId,
           played: 0,
           win: 0,
           draw: 0,

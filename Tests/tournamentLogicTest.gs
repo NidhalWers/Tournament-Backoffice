@@ -34,6 +34,7 @@ function testTournamentLogic() {
         );
 
         assertDeepEquals(["Alpha", "Charlie", "Bravo"], standings.A.map(row => row.team));
+        assertDeepEquals(["1", "3", "2"], standings.A.map(row => row.teamId));
         assertDeepEquals(
           { played: 2, win: 1, draw: 1, loss: 0, gf: 2, ga: 1, pts: 4 },
           selectStandingStats(standings.A[0])

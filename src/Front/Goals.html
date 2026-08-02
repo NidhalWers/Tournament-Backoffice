@@ -85,12 +85,12 @@
 
       <label>
         <input type="radio" name="penaltyWinner" value="A">
-        ${currentMatch.teamA}
+        ${currentMatch.teamAName || currentMatch.teamA}
       </label>
 
       <label style="margin-left:10px;">
         <input type="radio" name="penaltyWinner" value="B">
-        ${currentMatch.teamB}
+        ${currentMatch.teamBName || currentMatch.teamB}
       </label>
     `;
     }

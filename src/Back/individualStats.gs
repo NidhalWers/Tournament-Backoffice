@@ -2,7 +2,7 @@ function computeTopScorers(tournamentId) {
   const goals = getSheetData("Goals");
 
   const teamIdByName = getTeamsIdByName(); 
-  const teamStage = computeTeamsRank(tournamentId, teamIdByName);
+  const teamStage = computeTeamsRank(tournamentId);
 
   const scorers = {};
   goals
@@ -37,7 +37,7 @@ function computeTopScorers(tournamentId) {
     );
 }
 
-function computeTeamsRank(tournamentId, teamIdByName){
+function computeTeamsRank(tournamentId){
   const matches = getSheetData("Matches");
 
   const stageRank = {
@@ -55,18 +55,8 @@ function computeTeamsRank(tournamentId, teamIdByName){
 
       const rank = stageRank[m.stage] || 0;
 
-      let teamAId = m.teamA;
-      let teamBId = m.teamB;
-
-      // Group-stage matches contain IDs,
-      // while knockout matches currently contain names.
-      if (teamIdByName[teamAId]) {
-        teamAId = teamIdByName[teamAId];
-      }
-
-      if (teamIdByName[teamBId]) {
-        teamBId = teamIdByName[teamBId];
-      }
+      const teamAId = m.teamA;
+      const teamBId = m.teamB;
 
       if (teamAId) {
         teamStage[teamAId] = Math.max(teamStage[teamAId] || 0, rank);
