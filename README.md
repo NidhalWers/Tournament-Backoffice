@@ -918,13 +918,6 @@ Possible future improvements include:
 
 Contributions, suggestions and improvements are welcome.
 
-If you want to contribute:
-
-1. Fork the repository.
-2. Create a feature branch.
-3. Make your changes.
-4. Submit a pull request.
-
 Please keep new features consistent with the existing separation between:
 
 - tournament business logic;

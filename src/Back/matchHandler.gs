@@ -458,26 +458,61 @@ function saveMatchWithGoals(matchId, scoreA, scoreB, goals, penaltyWinner, fairP
 }
 
 function registerScorers(matchId, scoreA, scoreB, goals){
-  if (scoreA === 0 && scoreB === 0) {
+  const parsedScoreA = Number(scoreA);
+  const parsedScoreB = Number(scoreB);
+
+  if (!Number.isInteger(parsedScoreA) || parsedScoreA < 0 ||
+      !Number.isInteger(parsedScoreB) || parsedScoreB < 0) {
+    throw new Error("Scores invalides");
+  }
+
+  if (parsedScoreA === 0 && parsedScoreB === 0) {
     // pas de buteur
     return;
+  }
+
+  if (!Array.isArray(goals)) {
+    throw new Error("Liste des buteurs invalide");
   }
 
   const matches = getSheetData("Matches");
   const match = matches.find(m => String(m.id) === String(matchId));
 
+  if (!match) {
+    throw new Error("Match introuvable");
+  }
+
   const tournamentId = match.tournamentId;
+  const teamNames = getTeamNamesByMatchId(matchId);
 
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Goals");
 
-  const rows = goals.map(g => [
-    Utilities.getUuid(),
-    tournamentId,
-    matchId,
-    g.team,
-    g.player,
-    g.teamName
-  ]);
+  const goalCountByTeam = { A: 0, B: 0 };
+  const rows = goals.map(g => {
+    if (!g || (g.team !== "A" && g.team !== "B")) {
+      throw new Error("Équipe du buteur invalide");
+    }
+
+    const playerName = normalizePlayerName(g.player);
+    if (!playerName) {
+      throw new Error("Nom du buteur manquant");
+    }
+
+    goalCountByTeam[g.team]++;
+
+    return [
+      Utilities.getUuid(),
+      tournamentId,
+      matchId,
+      g.team,
+      playerName,
+      g.team === "A" ? teamNames.teamAName : teamNames.teamBName
+    ];
+  });
+
+  if (goalCountByTeam.A > parsedScoreA || goalCountByTeam.B > parsedScoreB) {
+    throw new Error("Le nombre de buteurs dépasse le score du match");
+  }
 
   if (rows.length > 0) {
     sheet.getRange(

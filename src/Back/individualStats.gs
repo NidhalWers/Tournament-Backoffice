@@ -8,13 +8,18 @@ function computeTopScorers(tournamentId) {
   goals
     .filter(g => String(g.tournamentId) === String(tournamentId))
     .forEach(g => {
-      const key = g.playerName + "_" + g.teamName;
+      const playerName = normalizePlayerName(g.playerName);
+      if (!playerName) {
+        return;
+      }
+
+      const key = JSON.stringify([getPlayerNameKey(playerName), String(g.teamName)]);
 
       const teamId = teamIdByName[g.teamName];
 
       if (!scorers[key]) {
         scorers[key] = {
-          player: g.playerName,
+          player: playerName,
           team: g.teamName,
           goals: 0,
           stageRank: teamStage[teamId] || 0

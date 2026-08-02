@@ -1,5 +1,11 @@
 <script>
 
+  function escapeHtml(value) {
+    const element = document.createElement("div");
+    element.textContent = value == null ? "" : String(value);
+    return element.innerHTML;
+  }
+
   function getGoalsForMatch(matchId) {
     return goalsData.filter(g => g.matchId === matchId);
   }
@@ -141,7 +147,7 @@
         const goals = [];
         // équipe A
         for (let i = 0; i < currentScores.scoreA; i++) {
-          const name = document.getElementById("goalA_" + i).value;
+          const name = document.getElementById("goalA_" + i).value.trim();
           if (name) {
             goals.push({
               team: "A",
@@ -153,7 +159,7 @@
 
         // équipe B
         for (let i = 0; i < currentScores.scoreB; i++) {
-          const name = document.getElementById("goalB_" + i).value;
+          const name = document.getElementById("goalB_" + i).value.trim();
           if (name) {
             goals.push({
               team: "B",

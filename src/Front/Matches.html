@@ -70,8 +70,8 @@
         for (let i = 0; i < maxGoals; i++) {
           goalsHtml += `
           <div class="goals-row">
-            <div class="goal-left">${goalsA[i] ? "⚽ " + goalsA[i].playerName : ""}</div>
-            <div class="goal-right">${goalsB[i] ? "⚽ " + goalsB[i].playerName : ""}</div>
+            <div class="goal-left">${goalsA[i] ? "⚽ " + escapeHtml(goalsA[i].playerName) : ""}</div>
+            <div class="goal-right">${goalsB[i] ? "⚽ " + escapeHtml(goalsB[i].playerName) : ""}</div>
           </div>
         `;
         }
