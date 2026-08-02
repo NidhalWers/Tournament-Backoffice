@@ -1,0 +1,130 @@
+function testTournamentLogic() {
+  runTestSuite("Logique du tournoi", [
+    {
+      name: "détecte le format à partir du classement",
+      test: function() {
+        const standings = {
+          A: [{}, {}, {}],
+          B: [{}, {}, {}]
+        };
+
+        assertDeepEquals({ groupCount: 2, groupSize: 3 }, getTournamentFormat(standings));
+      }
+    },
+    {
+      name: "considère la phase de groupes complète uniquement si tous les matchs sont joués",
+      test: function() {
+        assertTrue(isGroupStageComplete([]));
+        assertTrue(isGroupStageComplete([{ played: true }, { played: true }]));
+        assertEquals(false, isGroupStageComplete([{ played: true }, { played: false }]));
+      }
+    },
+    {
+      name: "calcule victoires, nul, buts et points",
+      test: function() {
+        const matches = [
+          groupMatch("A", "1", "2", 2, 1, true),
+          groupMatch("A", "1", "3", 0, 0, true),
+          groupMatch("A", "2", "3", "", "", false)
+        ];
+        const standings = computeStandings(
+          matches,
+          { "1": "Alpha", "2": "Bravo", "3": "Charlie" },
+          []
+        );
+
+        assertDeepEquals(["Alpha", "Charlie", "Bravo"], standings.A.map(row => row.team));
+        assertDeepEquals(
+          { played: 2, win: 1, draw: 1, loss: 0, gf: 2, ga: 1, pts: 4 },
+          selectStandingStats(standings.A[0])
+        );
+        assertDeepEquals(
+          { played: 1, win: 0, draw: 1, loss: 0, gf: 0, ga: 0, pts: 1 },
+          selectStandingStats(standings.A[1])
+        );
+      }
+    },
+    {
+      name: "départage à la différence de buts puis aux buts marqués",
+      test: function() {
+        const matches = [
+          groupMatch("A", "1", "2", 3, 1, true),
+          groupMatch("A", "3", "4", 2, 0, true)
+        ];
+        const standings = computeStandings(matches, {}, []);
+
+        assertDeepEquals(["1", "3", "2", "4"], standings.A.map(row => row.team));
+      }
+    },
+    {
+      name: "utilise le fair-play après les critères sportifs",
+      test: function() {
+        const matches = [groupMatch("A", "1", "2", 0, 0, false)];
+        const fairPlay = [
+          { teamId: "1", solidarityPoints: 1 },
+          { teamId: "2", redCard: 1 }
+        ];
+        const standings = computeStandings(matches, {}, fairPlay);
+
+        assertDeepEquals(["1", "2"], standings.A.map(row => row.team));
+        assertEquals(1, standings.A[0].fairPlayScore);
+        assertEquals(-3, standings.A[1].fairPlayScore);
+      }
+    },
+    {
+      name: "qualifie les deux premiers de chaque groupe pour les demi-finales",
+      test: function() {
+        const standings = {
+          A: [{ team: "A1" }, { team: "A2" }, { team: "A3" }],
+          B: [{ team: "B1" }, { team: "B2" }, { team: "B3" }]
+        };
+        const result = getQualifiedTeams(standings);
+
+        assertDeepEquals(
+          ["A1:A:1", "A2:A:2", "B1:B:1", "B2:B:2"],
+          result.teams.map(team => `${team.team}:${team.group}:${team.rank}`)
+        );
+        assertEquals(false, result.tieBreakOccurred);
+      }
+    },
+    {
+      name: "sélectionne les deux meilleurs troisièmes selon les critères sportifs",
+      test: function() {
+        const standings = {
+          A: rankedGroup("A", { pts: 4, gf: 3, ga: 2, fairPlayScore: 0 }),
+          B: rankedGroup("B", { pts: 5, gf: 2, ga: 1, fairPlayScore: 0 }),
+          C: rankedGroup("C", { pts: 4, gf: 4, ga: 2, fairPlayScore: 0 })
+        };
+        const result = computeQualifiedTeamsForThreeGroups(standings);
+        const thirdPlaces = result.teams.filter(team => team.rank === 3);
+
+        assertDeepEquals(["B3", "C3"], thirdPlaces.map(team => team.team));
+        assertEquals(false, result.tieBreakOccurred);
+      }
+    }
+  ]);
+}
+
+function groupMatch(group, teamA, teamB, scoreA, scoreB, played) {
+  return { group, teamA, teamB, scoreA, scoreB, played };
+}
+
+function selectStandingStats(standing) {
+  return {
+    played: standing.played,
+    win: standing.win,
+    draw: standing.draw,
+    loss: standing.loss,
+    gf: standing.gf,
+    ga: standing.ga,
+    pts: standing.pts
+  };
+}
+
+function rankedGroup(prefix, thirdStats) {
+  return [
+    { team: `${prefix}1`, pts: 9, gf: 5, ga: 0, fairPlayScore: 0 },
+    { team: `${prefix}2`, pts: 6, gf: 4, ga: 1, fairPlayScore: 0 },
+    Object.assign({ team: `${prefix}3` }, thirdStats)
+  ];
+}
