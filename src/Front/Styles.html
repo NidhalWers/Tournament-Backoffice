@@ -101,6 +101,151 @@
   .groups-container {
     display: flex;
     gap: 40px;
+    align-items: flex-start;
+  }
+
+  #matches {
+    flex: 2;
+    min-width: 0;
+  }
+
+  #standings {
+    flex: 1;
+    min-width: 300px;
+  }
+
+  .schedule-panel {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 16px 18px;
+    margin-bottom: 22px;
+    border: 1px solid #dcebdc;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f7fbf7, #eef7ef);
+    box-shadow: 0 3px 12px rgba(33, 85, 38, 0.08);
+  }
+
+  .schedule-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 250px;
+  }
+
+  .schedule-heading h3,
+  .schedule-heading p {
+    margin: 0;
+  }
+
+  .schedule-heading p {
+    margin-top: 4px;
+    color: #607064;
+    font-size: 12px;
+  }
+
+  .schedule-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border-radius: 10px;
+    background: #dcefdc;
+    font-size: 20px;
+  }
+
+  .schedule-controls {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+  }
+
+  .schedule-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    color: #344438;
+    font-size: 12px;
+    font-weight: bold;
+  }
+
+  .schedule-field input,
+  .schedule-field select {
+    box-sizing: border-box;
+    height: 38px;
+    padding: 0 10px;
+    border: 1px solid #b8c9bb;
+    border-radius: 7px;
+    background: white;
+    color: #1f2b21;
+    font: inherit;
+    font-size: 14px;
+  }
+
+  .schedule-field input:focus,
+  .schedule-field select:focus {
+    border-color: #4CAF50;
+    outline: 3px solid rgba(76, 175, 80, 0.15);
+  }
+
+  .schedule-break {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 7px;
+    background: white;
+    color: #526056;
+    font-size: 11px;
+  }
+
+  .schedule-break strong {
+    color: #2d7133;
+    font-size: 13px;
+  }
+
+  .schedule-summary {
+    min-width: 165px;
+    margin-left: auto;
+    padding-left: 18px;
+    border-left: 1px solid #cddfce;
+    color: #38513c;
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1.4;
+  }
+
+  .match-time {
+    display: flex;
+    flex: 0 0 62px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: 42px;
+    margin-right: 4px;
+    padding: 4px 7px;
+    border: 1px solid #d7e8d8;
+    border-radius: 7px;
+    background: #f2f8f2;
+  }
+
+  .match-time span {
+    color: #718074;
+    font-size: 9px;
+    font-weight: bold;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .match-time time {
+    margin-top: 2px;
+    color: #25632b;
+    font-size: 14px;
+    font-weight: bold;
+    white-space: nowrap;
   }
 
   .bracket {
@@ -320,6 +465,55 @@
   @keyframes spin {
     to {
       transform: rotate(360deg);
+    }
+  }
+
+  @media (max-width: 1000px) {
+    .schedule-panel {
+      align-items: stretch;
+      flex-wrap: wrap;
+    }
+
+    .schedule-summary {
+      width: 100%;
+      margin-left: 0;
+      padding: 10px 0 0;
+      border-top: 1px solid #cddfce;
+      border-left: 0;
+    }
+
+    .groups-container {
+      flex-direction: column;
+    }
+
+    #matches,
+    #standings {
+      width: 100%;
+    }
+
+    .match {
+      overflow-x: auto;
+    }
+
+    .match-line {
+      min-width: 720px;
+    }
+  }
+
+  @media (max-width: 620px) {
+    .schedule-controls {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .schedule-field {
+      flex: 1;
+      min-width: 130px;
+    }
+
+    .schedule-field input,
+    .schedule-field select {
+      width: 100%;
     }
   }
 </style>

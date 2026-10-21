@@ -34,9 +34,48 @@
       <button onclick="generateMatches()">Generate Group Matches</button>
     </div>
 
-    <div class="groups-container" style="display:flex; gap:40px;">
-      <div id="matches" style="flex:2;"></div>
-      <div id="standings" style="flex:1;"></div>
+    <section class="schedule-panel" aria-labelledby="scheduleTitle">
+      <div class="schedule-heading">
+        <span class="schedule-icon" aria-hidden="true">🕒</span>
+        <div>
+          <h3 id="scheduleTitle">Match schedule</h3>
+          <p>Times are calculated automatically and are not saved.</p>
+        </div>
+      </div>
+
+      <div class="schedule-controls">
+        <label class="schedule-field" for="groupScheduleStart">
+          <span>Start time</span>
+          <input id="groupScheduleStart" type="time" value="09:00" oninput="updateGroupMatchSchedule()">
+        </label>
+
+        <label class="schedule-field" for="groupMatchDuration">
+          <span>Match duration</span>
+          <select id="groupMatchDuration" onchange="updateGroupMatchSchedule()">
+            <option value="5">5 min</option>
+            <option value="10" selected>10 min</option>
+            <option value="12">12 min</option>
+            <option value="15">15 min</option>
+            <option value="20">20 min</option>
+            <option value="25">25 min</option>
+            <option value="30">30 min</option>
+          </select>
+        </label>
+
+        <div class="schedule-break" title="Time between the end of a match and the start of the next one">
+          <strong>+3 min</strong>
+          <span>between matches</span>
+        </div>
+      </div>
+
+      <div id="groupScheduleSummary" class="schedule-summary" aria-live="polite">
+        Load a tournament to calculate the schedule.
+      </div>
+    </section>
+
+    <div class="groups-container">
+      <div id="matches"></div>
+      <div id="standings"></div>
     </div>
   </div>
 

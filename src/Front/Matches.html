@@ -39,6 +39,7 @@
 
     if (!matches || matches.length === 0) {
       container.innerHTML = "<p>No matches</p>";
+      updateGroupMatchSchedule();
       return;
     }
 
@@ -54,7 +55,7 @@
       title.innerText = "Group " + group;
       container.appendChild(title);
 
-      groups[group].forEach(m => {
+      groups[group].forEach((m, matchIndex) => {
         const div = document.createElement("div");
         div.className = "match " + (m.played ? "played" : "");
         const disabled = m.played ? "disabled" : "";
@@ -79,6 +80,10 @@
         div.innerHTML = `
         <div class="match-wrapper">
           <div class="match-line">
+            <div class="match-time">
+              <span>Match ${matchIndex + 1}</span>
+              <time data-group-match-index="${matchIndex}">--:--</time>
+            </div>
             
             <span class="team team-left">${m.teamAName}</span>
             <button class="forfeit-btn" ${disabled} onclick="setForfeit('${m.id}', 'A')">Forfeit</button>
@@ -104,6 +109,71 @@
         container.appendChild(div);
       });
     });
+
+    updateGroupMatchSchedule();
+  }
+
+  function updateGroupMatchSchedule() {
+    const startInput = document.getElementById("groupScheduleStart");
+    const durationSelect = document.getElementById("groupMatchDuration");
+    const summary = document.getElementById("groupScheduleSummary");
+
+    if (!startInput || !durationSelect || !summary) return;
+
+    const scheduledMatches = document.querySelectorAll("[data-group-match-index]");
+    const totalMatches = scheduledMatches.length;
+    const slotCount = Array.from(scheduledMatches).reduce((maximum, timeElement) => {
+      return Math.max(maximum, Number(timeElement.dataset.groupMatchIndex) + 1);
+    }, 0);
+    const startTime = startInput.value;
+    const duration = Number(durationSelect.value);
+
+    scheduledMatches.forEach(timeElement => {
+      const matchIndex = Number(timeElement.dataset.groupMatchIndex);
+      const scheduledTime = calculateGroupMatchTime(startTime, matchIndex * (duration + 3));
+
+      timeElement.textContent = scheduledTime ? scheduledTime.label : "--:--";
+      timeElement.dateTime = scheduledTime ? scheduledTime.time : "";
+    });
+
+    if (totalMatches === 0) {
+      summary.textContent = "No group matches to schedule yet.";
+      return;
+    }
+
+    if (!startTime) {
+      summary.textContent = "Choose a start time to display the schedule.";
+      return;
+    }
+
+    const finishOffset = (slotCount - 1) * (duration + 3) + duration;
+    const finishTime = calculateGroupMatchTime(startTime, finishOffset);
+
+    summary.textContent = finishTime
+      ? `${totalMatches} matches · ${slotCount} time slots · Estimated finish ${finishTime.label}`
+      : "Choose a valid start time.";
+  }
+
+  function calculateGroupMatchTime(startTime, offsetMinutes) {
+    if (!/^\d{2}:\d{2}$/.test(startTime) || !Number.isFinite(offsetMinutes)) return null;
+
+    const [hours, minutes] = startTime.split(":").map(Number);
+
+    if (hours > 23 || minutes > 59) return null;
+
+    const totalMinutes = hours * 60 + minutes + offsetMinutes;
+    const minutesInDay = 24 * 60;
+    const normalizedMinutes = totalMinutes % minutesInDay;
+    const dayOffset = Math.floor(totalMinutes / minutesInDay);
+    const scheduledHours = String(Math.floor(normalizedMinutes / 60)).padStart(2, "0");
+    const scheduledMinutes = String(normalizedMinutes % 60).padStart(2, "0");
+    const time = `${scheduledHours}:${scheduledMinutes}`;
+    const nextDayLabel = dayOffset > 0 ? ` (+${dayOffset} day${dayOffset > 1 ? "s" : ""})` : "";
+
+    return {
+      time,
+      label: time + nextDayLabel
+    };
   }
 
 
