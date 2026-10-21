@@ -106,7 +106,137 @@ function generateRoundRobin(teams) {
     list.splice(1, 0, list.pop());
   }
 
-  return rounds;
+  return balanceRoundRobinSchedule(rounds);
+}
+
+function balanceRoundRobinSchedule(rounds) {
+  const maximumCombinations = 100000;
+  let combinationCount = 1;
+
+  rounds.forEach(round => {
+    for (let factor = 2; factor <= round.length; factor++) {
+      combinationCount *= factor;
+    }
+  });
+
+  if (combinationCount > maximumCombinations) {
+    return balanceRoundRobinScheduleGreedily(rounds);
+  }
+
+  const roundPermutations = rounds.map(round => getMatchPermutations(round));
+  let bestSchedule = rounds.map(round => [...round]);
+  let bestScore = getRoundRobinScheduleScore(bestSchedule);
+
+  function findBestSchedule(roundIndex, scheduledRounds) {
+    if (roundIndex === roundPermutations.length) {
+      const score = getRoundRobinScheduleScore(scheduledRounds);
+
+      if (isScheduleScoreBetter(score, bestScore)) {
+        bestSchedule = scheduledRounds.map(round => [...round]);
+        bestScore = score;
+      }
+
+      return;
+    }
+
+    roundPermutations[roundIndex].forEach(round => {
+      scheduledRounds.push(round);
+      findBestSchedule(roundIndex + 1, scheduledRounds);
+      scheduledRounds.pop();
+    });
+  }
+
+  findBestSchedule(0, []);
+
+  return bestSchedule;
+}
+
+function balanceRoundRobinScheduleGreedily(rounds) {
+  const schedule = [];
+
+  rounds.forEach(round => {
+    const remainingMatches = [...round];
+    const orderedRound = [];
+
+    while (remainingMatches.length > 0) {
+      let bestIndex = 0;
+      let bestScore = null;
+
+      remainingMatches.forEach((match, index) => {
+        const candidateSchedule = [...schedule, [...orderedRound, match]];
+        const score = getRoundRobinScheduleScore(candidateSchedule);
+
+        if (bestScore === null || isScheduleScoreBetter(score, bestScore)) {
+          bestIndex = index;
+          bestScore = score;
+        }
+      });
+
+      orderedRound.push(remainingMatches.splice(bestIndex, 1)[0]);
+    }
+
+    schedule.push(orderedRound);
+  });
+
+  return schedule;
+}
+
+function getMatchPermutations(matches) {
+  if (matches.length <= 1) {
+    return [[...matches]];
+  }
+
+  const permutations = [];
+
+  matches.forEach((match, index) => {
+    const remainingMatches = matches.filter((_, matchIndex) => matchIndex !== index);
+
+    getMatchPermutations(remainingMatches).forEach(permutation => {
+      permutations.push([match, ...permutation]);
+    });
+  });
+
+  return permutations;
+}
+
+function getRoundRobinScheduleScore(rounds) {
+  const matches = rounds.reduce((all, round) => all.concat(round), []);
+  const lastMatchByTeam = {};
+  let consecutiveMatches = 0;
+  let maximumGap = 0;
+  let squaredGaps = 0;
+
+  matches.forEach((match, matchIndex) => {
+    if (matchIndex > 0 && matchesShareTeam(matches[matchIndex - 1], match)) {
+      consecutiveMatches++;
+    }
+
+    match.forEach(team => {
+      if (lastMatchByTeam[team] !== undefined) {
+        const gap = matchIndex - lastMatchByTeam[team];
+        maximumGap = Math.max(maximumGap, gap);
+        squaredGaps += gap * gap;
+      }
+
+      lastMatchByTeam[team] = matchIndex;
+    });
+  });
+
+  return [consecutiveMatches, maximumGap, squaredGaps];
+}
+
+function matchesShareTeam(firstMatch, secondMatch) {
+  return firstMatch.some(team => secondMatch.includes(team));
+}
+
+function isScheduleScoreBetter(score, referenceScore) {
+  for (let i = 0; i < score.length; i++) {
+    if (score[i] !== referenceScore[i]) {
+      return score[i] < referenceScore[i];
+    }
+  }
+
+  return false;
 }
 
 function generateFinalPhase(tournamentId) {
