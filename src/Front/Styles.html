@@ -248,6 +248,220 @@
     white-space: nowrap;
   }
 
+  .referee-manager {
+    margin-bottom: 22px;
+    border: 1px solid #e2dfcc;
+    border-radius: 12px;
+    background: #fffdf5;
+    box-shadow: 0 3px 12px rgba(91, 77, 20, 0.07);
+  }
+
+  .referee-manager summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 14px 18px;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .referee-manager summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .referee-manager summary::after {
+    content: "⌄";
+    color: #776a34;
+    font-size: 18px;
+    transition: transform 0.2s ease;
+  }
+
+  .referee-manager[open] summary::after {
+    transform: rotate(180deg);
+  }
+
+  .referee-manager-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .referee-manager-title > span:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .referee-manager-title small {
+    color: #756f59;
+    font-weight: normal;
+  }
+
+  .referee-manager-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #f5edbe;
+  }
+
+  .referee-count {
+    margin-left: auto;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: #f3edcf;
+    color: #685d2c;
+    font-size: 11px;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+
+  .referee-manager-content {
+    padding: 0 18px 18px;
+    border-top: 1px solid #ebe6ce;
+  }
+
+  .referee-setup-message {
+    margin: 14px 0;
+    padding: 10px 12px;
+    border: 1px solid #edcf8a;
+    border-radius: 7px;
+    background: #fff7df;
+    color: #76591b;
+    font-size: 13px;
+  }
+
+  .referee-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .referee-name-field {
+    flex: 1;
+    max-width: 360px;
+  }
+
+  .referee-add-btn {
+    height: 38px;
+    padding: 0 15px;
+    border: 0;
+    border-radius: 7px;
+    background: #4CAF50;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  .referee-add-btn:hover:not(:disabled) {
+    background: #3e9142;
+  }
+
+  .referee-add-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .referee-rule {
+    margin: 10px 0 0;
+    color: #756f59;
+    font-size: 11px;
+  }
+
+  .referee-roster {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .referee-roster-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 11px;
+    border: 1px solid #ebe5c8;
+    border-radius: 8px;
+    background: white;
+  }
+
+  .referee-identity {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .referee-identity strong,
+  .referee-identity small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .referee-identity small {
+    color: #756f59;
+  }
+
+  .referee-remove-btn {
+    padding: 5px 8px;
+    border: 0;
+    border-radius: 5px;
+    background: #f8e7e7;
+    color: #9b3030;
+    cursor: pointer;
+    font-size: 11px;
+  }
+
+  .referee-empty-state {
+    margin: 0;
+    color: #756f59;
+    font-size: 13px;
+  }
+
+  .match-referee-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: -4px 0 0 72px;
+    color: #5c635e;
+    font-size: 11px;
+  }
+
+  .match-referee-label {
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+
+  .match-referee-row select {
+    min-width: 220px;
+    padding: 4px 7px;
+    border: 1px solid #d5d9d6;
+    border-radius: 5px;
+    background: white;
+    color: #303733;
+    font-size: 12px;
+  }
+
+  .match-referee-row select:focus {
+    border-color: #8e833f;
+    outline: 2px solid rgba(177, 159, 67, 0.15);
+  }
+
+  .match-referee-unavailable {
+    color: #8a8170;
+    font-style: italic;
+  }
+
+  .match-referee-status {
+    color: #647468;
+    font-style: italic;
+  }
+
   .bracket {
     display: flex;
     gap: 40px;
@@ -514,6 +728,26 @@
     .schedule-field input,
     .schedule-field select {
       width: 100%;
+    }
+
+    .referee-manager summary {
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .referee-count {
+      margin-left: 52px;
+    }
+
+    .referee-form {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .referee-name-field,
+    .referee-add-btn {
+      width: 100%;
+      max-width: none;
     }
   }
 </style>

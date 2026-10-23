@@ -73,6 +73,44 @@
       </div>
     </section>
 
+    <details id="refereeManager" class="referee-manager">
+      <summary>
+        <span class="referee-manager-title">
+          <span class="referee-manager-icon" aria-hidden="true">🟨</span>
+          <span>
+            <strong>Referees</strong>
+            <small>Register players and assign them to matches</small>
+          </span>
+        </span>
+        <span id="refereeCount" class="referee-count">0 registered</span>
+      </summary>
+
+      <div class="referee-manager-content">
+        <div id="refereeSetupMessage" class="referee-setup-message" hidden></div>
+
+        <form class="referee-form" onsubmit="event.preventDefault(); addTournamentReferee();">
+          <label class="schedule-field" for="refereeTeam">
+            <span>Team</span>
+            <select id="refereeTeam"></select>
+          </label>
+
+          <label class="schedule-field referee-name-field" for="refereeName">
+            <span>Player name</span>
+            <input id="refereeName" type="text" autocomplete="off" placeholder="First and last name">
+          </label>
+
+          <button id="addRefereeButton" class="referee-add-btn" type="submit">Add referee</button>
+        </form>
+
+        <p class="referee-rule">
+          Match lists automatically exclude referees from the same group, teams currently playing,
+          and players already assigned at the same time.
+        </p>
+
+        <div id="refereeRoster" class="referee-roster"></div>
+      </div>
+    </details>
+
     <div class="groups-container">
       <div id="matches"></div>
       <div id="standings"></div>
@@ -104,6 +142,7 @@
   </div>
 
   <?!= include('Main'); ?>
+  <?!= include('Referees'); ?>
   <?!= include('Matches'); ?>
   <?!= include('Bracket'); ?>
   <?!= include('Goals'); ?>

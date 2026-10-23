@@ -21,6 +21,12 @@ function initializeSpreadsheet() {
     "FairPlay": [
       "id", "tournamentId",	"matchId", "teamId", "redCard",	"seriousRedCard","solidarityPoints"																			 
     ],
+    "Referees": [
+      "id", "tournamentId", "teamId", "playerName"
+    ],
+    "MatchReferees": [
+      "id", "tournamentId", "matchId", "refereeId"
+    ],
   };
 
   let createdSheetCount = 0;

@@ -689,6 +689,36 @@ seriousRedCard
 solidarityPoints
 ```
 
+---
+
+## `Referees`
+
+Stores the players made available as referees by tournament teams.
+
+Columns:
+
+```text
+id
+tournamentId
+teamId
+playerName
+```
+
+---
+
+## `MatchReferees`
+
+Stores referee assignments for group-stage matches.
+
+Columns:
+
+```text
+id
+tournamentId
+matchId
+refereeId
+```
+
 Fair Play scores are aggregated by team and used as a tie-breaking criterion.
 
 ---

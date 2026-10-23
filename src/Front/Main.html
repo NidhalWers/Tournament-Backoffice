@@ -43,7 +43,17 @@
 
         window.currentGroupMatches = res.matches || [];
         window.currentKnockoutMatches = res.knockoutMatches || [];
+        window.currentReferees = res.referees || [];
+        window.currentRefereeAssignments = res.refereeAssignments || [];
+        window.eligibleRefereeIdsByMatch = res.eligibleRefereeIdsByMatch || {};
+        window.refereeSetupReady = res.refereeSetupReady === true;
 
+        renderRefereeManager(
+          res.tournamentTeams || [],
+          res.referees || [],
+          res.refereeSetupReady === true,
+          res.missingRefereeSheets || []
+        );
         renderMatches(res.matches);
         renderStandings(res.standings);
         renderBracket(res.knockoutMatches);

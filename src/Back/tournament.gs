@@ -44,7 +44,9 @@ function getTournamentData(tournamentId) {
   .filter(g => matches.some(m => m.id === g.matchId)
             || knockoutMatches.some(m => m.id === g.matchId));
 
-  var response = { matches, standings, isComplete, knockoutMatches, goals };
+  const refereeData = getTournamentRefereeData(tournamentId, matches, teamMap);
+
+  var response = { matches, standings, isComplete, knockoutMatches, goals, ...refereeData };
   return response;
 
 }
