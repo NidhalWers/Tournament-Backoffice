@@ -58,6 +58,50 @@ function testTournamentLogic() {
       }
     },
     {
+      name: "With_SamePointsAndGoalDifference_Should_UseHeadToHeadBeforeGoalsScored",
+      test: function() {
+        // Arrange
+        const matches = [
+          groupMatch("A", "1", "2", 2, 0, true),
+          groupMatch("A", "1", "3", 0, 4, true),
+          groupMatch("A", "2", "3", 4, 0, true),
+          groupMatch("A", "2", "4", 0, 4, true)
+        ];
+
+        // Act
+        const standings = computeStandings(matches, {}, []);
+        const teamOneIndex = standings.A.findIndex(team => team.teamId === "1");
+        const teamTwoIndex = standings.A.findIndex(team => team.teamId === "2");
+
+        // Assert
+        assertTrue(teamOneIndex < teamTwoIndex);
+        assertEquals(2, standings.A[teamOneIndex].gf);
+        assertEquals(4, standings.A[teamTwoIndex].gf);
+      }
+    },
+    {
+      name: "With_ThreeTeamsTied_Should_UseHeadToHeadMiniTable",
+      test: function() {
+        // Arrange
+        const standings = [
+          { teamId: "1", pts: 6, gf: 1, ga: 0, fairPlayScore: 0 },
+          { teamId: "2", pts: 6, gf: 5, ga: 4, fairPlayScore: 0 },
+          { teamId: "3", pts: 6, gf: 8, ga: 7, fairPlayScore: 0 }
+        ];
+        const matches = [
+          groupMatch("A", "1", "2", 1, 0, true),
+          groupMatch("A", "1", "3", 1, 0, true),
+          groupMatch("A", "2", "3", 1, 0, true)
+        ];
+
+        // Act
+        const result = sortGroupStandings(standings, matches);
+
+        // Assert
+        assertDeepEquals(["1", "2", "3"], result.map(team => team.teamId));
+      }
+    },
+    {
       name: "uses fair play after sporting criteria",
       test: function() {
         const matches = [groupMatch("A", "1", "2", 0, 0, false)];

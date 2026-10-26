@@ -144,17 +144,75 @@ function computeStandings(matches, teamMap, fairPlay) {
   });
 
   Object.keys(groups).forEach(group => {
-    groups[group] = Object.values(groups[group]).sort((a, b) => {
-      return (
-        b.pts - a.pts ||
-        (b.gf - b.ga) - (a.gf - a.ga) ||
-        b.gf - a.gf ||
-        b.fairPlayScore - a.fairPlayScore
-      );
-    });
+    const groupStandings = Object.values(groups[group]);
+    const groupMatches = matches.filter(match => String(match.group) === String(group));
+
+    groups[group] = sortGroupStandings(groupStandings, groupMatches);
   });
 
   return groups;
+}
+
+function sortGroupStandings(groupStandings, groupMatches) {
+  const headToHeadPoints = getHeadToHeadPointsByTeam(groupStandings, groupMatches);
+
+  return [...groupStandings].sort((a, b) => {
+    return (
+      b.pts - a.pts ||
+      (b.gf - b.ga) - (a.gf - a.ga) ||
+      (headToHeadPoints[String(b.teamId)] || 0) -
+        (headToHeadPoints[String(a.teamId)] || 0) ||
+      b.gf - a.gf ||
+      b.fairPlayScore - a.fairPlayScore
+    );
+  });
+}
+
+function getHeadToHeadPointsByTeam(groupStandings, groupMatches) {
+  const tieKeyByTeam = {};
+  const teamsByTieKey = {};
+  const headToHeadPoints = {};
+
+  groupStandings.forEach(team => {
+    const teamId = String(team.teamId);
+    const tieKey = JSON.stringify([team.pts, team.gf - team.ga]);
+
+    tieKeyByTeam[teamId] = tieKey;
+    if (!teamsByTieKey[tieKey]) teamsByTieKey[tieKey] = [];
+    teamsByTieKey[tieKey].push(teamId);
+  });
+
+  Object.values(teamsByTieKey).forEach(teamIds => {
+    if (teamIds.length < 2) return;
+
+    teamIds.forEach(teamId => headToHeadPoints[teamId] = 0);
+  });
+
+  groupMatches.forEach(match => {
+    if (!match.played || match.scoreA === "" || match.scoreB === "") return;
+
+    const teamAId = String(match.teamA);
+    const teamBId = String(match.teamB);
+    const tieKey = tieKeyByTeam[teamAId];
+
+    if (!tieKey || tieKey !== tieKeyByTeam[teamBId] || teamsByTieKey[tieKey].length < 2) {
+      return;
+    }
+
+    const scoreA = Number(match.scoreA);
+    const scoreB = Number(match.scoreB);
+
+    if (scoreA > scoreB) {
+      headToHeadPoints[teamAId] += 3;
+    } else if (scoreB > scoreA) {
+      headToHeadPoints[teamBId] += 3;
+    } else {
+      headToHeadPoints[teamAId] += 1;
+      headToHeadPoints[teamBId] += 1;
+    }
+  });
+
+  return headToHeadPoints;
 }
 
 function getQualifiedTeams(standings) {

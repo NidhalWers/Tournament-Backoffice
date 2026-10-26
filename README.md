@@ -377,10 +377,13 @@ Group standings use the following criteria:
 
 1. Points
 2. Goal difference
-3. Goals scored
-4. Fair Play score
+3. Head-to-head points between tied teams from the same group
+4. Goals scored
+5. Fair Play score
 
-The same criteria are used to compare third-placed teams from different groups. If those criteria are all identical, the application performs a random draw.
+When more than two teams have the same points and goal difference, head-to-head points are calculated as a mini-table between those teams.
+
+Third-placed teams from different groups are compared by points, goal difference, goals scored, and Fair Play score. If those criteria are all identical, the application performs a random draw.
 
 The quarter-final draw uses points, goal difference, and goals scored to split qualified teams into a top half and a bottom half. The bottom half is then shuffled, and the draw avoids same-group pairings whenever possible.
 
