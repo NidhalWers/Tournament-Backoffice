@@ -127,12 +127,21 @@
     <div id="bracket"></div>
   </div>
 
-  <div id="goalModal" class="modal" style="display:none;">
+  <div id="goalModal" class="modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="goalModalTitle">
     <div class="modal-content">
-      <h3>Enter Scorers</h3>
+      <div class="goal-modal-header">
+        <div>
+          <p class="goal-modal-eyebrow">Match details</p>
+          <h3 id="goalModalTitle">Enter match details</h3>
+          <p id="goalModalScore" class="goal-modal-score"></p>
+        </div>
+        <button class="goal-modal-close" type="button" onclick="closeModal()" aria-label="Close match details">×</button>
+      </div>
       <div id="goalInputs"></div>
-      <button onclick="submitGoals()">Confirm</button>
-      <button onclick="closeModal()">Cancel</button>
+      <div class="goal-modal-actions">
+        <button class="goal-modal-cancel" type="button" onclick="closeModal()">Cancel</button>
+        <button id="confirmGoalsButton" class="goal-modal-confirm" type="button" onclick="submitGoals()">Confirm result</button>
+      </div>
     </div>
   </div>
 

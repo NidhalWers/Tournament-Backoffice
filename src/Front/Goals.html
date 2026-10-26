@@ -39,51 +39,118 @@
 
   function openGoalModal(matchId, scoreA, scoreB) {
     const container = document.getElementById("goalInputs");
-    container.innerHTML = "";
+    const teamAName = currentMatch.teamAName || currentMatch.teamA;
+    const teamBName = currentMatch.teamBName || currentMatch.teamB;
+    const displayTeamAName = escapeHtml(teamAName);
+    const displayTeamBName = escapeHtml(teamBName);
 
-    let html = "<h4>Team A</h4>";
+    document.getElementById("goalModalTitle").textContent = `${teamAName} vs ${teamBName}`;
+    document.getElementById("goalModalScore").textContent = `Score: ${scoreA} – ${scoreB}`;
+
+    let html = `
+      <section class="goal-modal-section" aria-labelledby="teamAHeading">
+        <div class="goal-team-heading">
+          <span class="goal-team-badge" aria-hidden="true">A</span>
+          <div>
+            <h4 id="teamAHeading">${displayTeamAName}</h4>
+            <p>${formatGoalCount(scoreA)}</p>
+          </div>
+        </div>
+        <div class="scorer-fields">
+    `;
 
     for (let i = 0; i < scoreA; i++) {
-      html += `<input placeholder="Scorer A ${i + 1}" id="goalA_${i}" /><br>`;
+      html += `
+        <label class="scorer-field" for="goalA_${i}">
+          <span>Goal ${i + 1}</span>
+          <input placeholder="Scorer name" id="goalA_${i}" autocomplete="off" aria-label="${displayTeamAName} scorer ${i + 1}" />
+        </label>
+      `;
     }
 
-    html += "<h4>Team B</h4>";
-
-    for (let i = 0; i < scoreB; i++) {
-      html += `<input placeholder="Scorer B ${i + 1}" id="goalB_${i}" /><br>`;
+    if (scoreA === 0) {
+      html += `<p class="goal-empty-state">No scorer to assign.</p>`;
     }
 
     html += `
-    <hr>
+        </div>
+      </section>
 
-    <h4>Respect & Solidarity - Team A</h4>
+      <section class="goal-modal-section" aria-labelledby="teamBHeading">
+        <div class="goal-team-heading">
+          <span class="goal-team-badge" aria-hidden="true">B</span>
+          <div>
+            <h4 id="teamBHeading">${displayTeamBName}</h4>
+            <p>${formatGoalCount(scoreB)}</p>
+          </div>
+        </div>
+        <div class="scorer-fields">
+    `;
 
-    Red cards:
-    <input type="number" id="redA" min="0" value="0"><br>
+    for (let i = 0; i < scoreB; i++) {
+      html += `
+        <label class="scorer-field" for="goalB_${i}">
+          <span>Goal ${i + 1}</span>
+          <input placeholder="Scorer name" id="goalB_${i}" autocomplete="off" aria-label="${displayTeamBName} scorer ${i + 1}" />
+        </label>
+      `;
+    }
 
-    Red cards for insults or fighting:
-    <input type="number" id="seriousRedA" min="0" value="0"><br>
+    if (scoreB === 0) {
+      html += `<p class="goal-empty-state">No scorer to assign.</p>`;
+    }
 
-    <hr>
+    html += `
+        </div>
+      </section>
 
-    <h4>Respect & Solidarity - Team B</h4>
+      <section class="goal-modal-section fair-play-section" aria-labelledby="fairPlayHeading">
+        <div class="goal-section-heading">
+          <h4 id="fairPlayHeading">Respect & solidarity</h4>
+          <p>Record any disciplinary cards for each team.</p>
+        </div>
 
-    Red cards:
-    <input type="number" id="redB" min="0" value="0"><br>
+        <div class="fair-play-teams">
+          <fieldset class="fair-play-team">
+            <legend>${displayTeamAName}</legend>
+            <label class="fair-play-field" for="redA">
+              <span>Red cards</span>
+              <input type="number" id="redA" min="0" step="1" value="0">
+            </label>
+            <label class="fair-play-field" for="seriousRedA">
+              <span>Red cards: insults or fighting</span>
+              <input type="number" id="seriousRedA" min="0" step="1" value="0">
+            </label>
+          </fieldset>
 
-    Red cards for insults or fighting:
-    <input type="number" id="seriousRedB" min="0" value="0"><br>
+          <fieldset class="fair-play-team">
+            <legend>${displayTeamBName}</legend>
+            <label class="fair-play-field" for="redB">
+              <span>Red cards</span>
+              <input type="number" id="redB" min="0" step="1" value="0">
+            </label>
+            <label class="fair-play-field" for="seriousRedB">
+              <span>Red cards: insults or fighting</span>
+              <input type="number" id="seriousRedB" min="0" step="1" value="0">
+            </label>
+          </fieldset>
+        </div>
+      </section>
 
-    <hr>
+      <section class="goal-modal-section solidarity-section" aria-labelledby="solidarityHeading">
+        <div class="goal-section-heading">
+          <h4 id="solidarityHeading">Solidarity point</h4>
+          <p>Select the team that provided the referee, if applicable.</p>
+        </div>
 
-    <h4>Solidarity Point</h4>
-
-    <label>Team that provided a referee:</label><br>
-
-    <select id="solidarityTeam">
-        <option value="">None</option>
-    </select>
-  `;
+        <label class="solidarity-field" for="solidarityTeam">
+          <span>Referee provided by</span>
+          <select id="solidarityTeam">
+            <option value="">No solidarity point</option>
+          </select>
+        </label>
+      </section>
+    `;
 
     const isKnockout =
       currentMatch.stage === "QF" ||
@@ -92,20 +159,26 @@
 
     if (scoreA === scoreB && isKnockout) {
       html += `
-      <hr>
-      <h4>Penalty Shootout Winner</h4>
-
-      <label>
-        <input type="radio" name="penaltyWinner" value="A">
-        ${currentMatch.teamAName || currentMatch.teamA}
-      </label>
-
-      <label style="margin-left:10px;">
-        <input type="radio" name="penaltyWinner" value="B">
-        ${currentMatch.teamBName || currentMatch.teamB}
-      </label>
-    `;
+        <section class="goal-modal-section penalty-section" aria-labelledby="penaltyHeading">
+          <div class="goal-section-heading">
+            <h4 id="penaltyHeading">Penalty shootout</h4>
+            <p>The match is tied. Select the team that won the shootout.</p>
+          </div>
+          <div class="penalty-options">
+            <label>
+              <input type="radio" name="penaltyWinner" value="A">
+              <span>${displayTeamAName}</span>
+            </label>
+            <label>
+              <input type="radio" name="penaltyWinner" value="B">
+              <span>${displayTeamBName}</span>
+            </label>
+          </div>
+        </section>
+      `;
     }
+
+    container.innerHTML = html;
 
     google.script.run
       .withSuccessHandler(function (teams) {
@@ -122,9 +195,13 @@
       })
       .getTournamentTeams(currentMatchId);
 
-    container.innerHTML = html;
-
     document.getElementById("goalModal").style.display = "block";
+    const firstInput = container.querySelector("input, select");
+    (firstInput || document.getElementById("confirmGoalsButton")).focus();
+  }
+
+  function formatGoalCount(score) {
+    return score === 1 ? "1 goal to assign" : `${score} goals to assign`;
   }
 
   function closeModal() {
@@ -150,76 +227,52 @@
       penaltyWinner = checked.value;
     }
 
+    const goals = [];
+    for (let i = 0; i < currentScores.scoreA; i++) {
+      const name = document.getElementById("goalA_" + i).value.trim();
+      if (name) {
+        goals.push({ team: "A", player: name });
+      }
+    }
+
+    for (let i = 0; i < currentScores.scoreB; i++) {
+      const name = document.getElementById("goalB_" + i).value.trim();
+      if (name) {
+        goals.push({ team: "B", player: name });
+      }
+    }
+
+    const fairPlay = {
+      teamA: {
+        redCards: parseInt(document.getElementById("redA").value) || 0,
+        seriousRedCards: parseInt(document.getElementById("seriousRedA").value) || 0
+      },
+      teamB: {
+        redCards: parseInt(document.getElementById("redB").value) || 0,
+        seriousRedCards: parseInt(document.getElementById("seriousRedB").value) || 0
+      },
+      solidarityTeamId: document.getElementById("solidarityTeam").value
+    };
+
     showLoader();
 
     google.script.run
-      .withSuccessHandler(function (teamNames) {
+      .withSuccessHandler(() => {
         hideLoader();
-
-        const goals = [];
-        // Team A
-        for (let i = 0; i < currentScores.scoreA; i++) {
-          const name = document.getElementById("goalA_" + i).value.trim();
-          if (name) {
-            goals.push({
-              team: "A",
-              player: name,
-              teamName: teamNames.teamAName
-            });
-          }
-        }
-
-        // Team B
-        for (let i = 0; i < currentScores.scoreB; i++) {
-          const name = document.getElementById("goalB_" + i).value.trim();
-          if (name) {
-            goals.push({
-              team: "B",
-              player: name,
-              teamName: teamNames.teamBName
-            });
-          }
-        }
-
-        const fairPlay = {
-          teamA: {
-            redCards: parseInt(document.getElementById("redA").value) || 0,
-            seriousRedCards: parseInt(document.getElementById("seriousRedA").value) || 0
-          },
-          teamB: {
-            redCards: parseInt(document.getElementById("redB").value) || 0,
-            seriousRedCards: parseInt(document.getElementById("seriousRedB").value) || 0
-          },
-          solidarityTeamId: document.getElementById("solidarityTeam").value
-        };
-
-        // Save
-        showLoader();
-
-        google.script.run
-          .withSuccessHandler(() => {
-            hideLoader();
-            closeModal();
-            loadTournament();
-          })
-          .withFailureHandler(err => {
-            hideLoader();
-            alert(err.message);
-          })
-          .saveMatchWithGoals(
-            currentMatchId,
-            currentScores.scoreA,
-            currentScores.scoreB,
-            goals,
-            penaltyWinner,
-            fairPlay
-          );
-
+        closeModal();
+        loadTournament();
       })
       .withFailureHandler(err => {
         hideLoader();
         alert(err.message);
       })
-      .getTeamNamesByMatchId(currentMatchId);
+      .saveMatchWithGoals(
+        currentMatchId,
+        currentScores.scoreA,
+        currentScores.scoreB,
+        goals,
+        penaltyWinner,
+        fairPlay
+      );
   }
 </script>
