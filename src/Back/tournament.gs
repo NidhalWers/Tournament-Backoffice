@@ -30,7 +30,9 @@ function getTournamentData(tournamentId) {
 
   const standings = computeStandings(matches, teamMap, fairPlay);
 
-  const isComplete = isGroupStageComplete(matches);
+  const tournamentTeams = getSheetData("TournamentTeams")
+    .filter(team => String(team.tournamentId) === String(tournamentId));
+  const isComplete = isGroupStageComplete(matches, tournamentTeams);
   
   const knockoutMatches = getSheetData("Matches")
     .filter(m => String(m.tournamentId) === String(tournamentId) && m.stage !== "GROUP")
@@ -63,8 +65,77 @@ function hasMatches(tournamentId) {
     .some(m => m.tournamentId === tournamentId && m.stage === "GROUP");
 }
 
-function isGroupStageComplete(matches) {
-  return matches.every(m => m.played === true);
+function isGroupStageComplete(matches, tournamentTeams) {
+  if (!Array.isArray(matches) || matches.length === 0 || !Array.isArray(tournamentTeams)) {
+    return false;
+  }
+
+  const teamIdsByGroup = {};
+
+  tournamentTeams.forEach(tournamentTeam => {
+    if (!tournamentTeam.group || !tournamentTeam.teamId) return;
+
+    const group = String(tournamentTeam.group);
+    if (!teamIdsByGroup[group]) teamIdsByGroup[group] = [];
+    teamIdsByGroup[group].push(String(tournamentTeam.teamId));
+  });
+
+  const groups = Object.keys(teamIdsByGroup);
+  if (groups.length === 0) return false;
+  if (matches.some(match => !teamIdsByGroup[String(match.group)])) return false;
+
+  return groups.every(group => isGroupComplete(
+    matches.filter(match => String(match.group) === group),
+    teamIdsByGroup[group]
+  ));
+}
+
+function isGroupComplete(matches, teamIds) {
+  const uniqueTeamIds = [...new Set(teamIds)];
+  if (uniqueTeamIds.length < 2 || uniqueTeamIds.length !== teamIds.length) return false;
+
+  const teamIdsSet = new Set(uniqueTeamIds);
+  const expectedMatchCount = uniqueTeamIds.length * (uniqueTeamIds.length - 1) / 2;
+  const matchCountByTeam = {};
+  const pairKeys = new Set();
+
+  uniqueTeamIds.forEach(teamId => matchCountByTeam[teamId] = 0);
+
+  if (matches.length !== expectedMatchCount) return false;
+
+  for (let i = 0; i < matches.length; i++) {
+    const match = matches[i];
+    const teamA = String(match.teamA);
+    const teamB = String(match.teamB);
+
+    if (!teamIdsSet.has(teamA) || !teamIdsSet.has(teamB) || teamA === teamB ||
+        !isPlayedMatchWithValidScores(match)) {
+      return false;
+    }
+
+    const pairKey = [teamA, teamB].sort().join("|");
+    if (pairKeys.has(pairKey)) return false;
+
+    pairKeys.add(pairKey);
+    matchCountByTeam[teamA]++;
+    matchCountByTeam[teamB]++;
+  }
+
+  return uniqueTeamIds.every(teamId => matchCountByTeam[teamId] === uniqueTeamIds.length - 1);
+}
+
+function isPlayedMatchWithValidScores(match) {
+  return match.played === true &&
+    isValidScoreValue(match.scoreA) &&
+    isValidScoreValue(match.scoreB);
+}
+
+function isValidScoreValue(value) {
+  if (typeof value === "string" && value.trim() === "") return false;
+  if (typeof value !== "string" && typeof value !== "number") return false;
+
+  const score = Number(value);
+  return Number.isInteger(score) && score >= 0;
 }
 
 function computeStandings(matches, teamMap, fairPlay) {
@@ -113,9 +184,9 @@ function computeStandings(matches, teamMap, fairPlay) {
       }
     });
 
-    if (m.played && m.scoreA !== "" && m.scoreB !== "") {
-      const a = parseInt(m.scoreA);
-      const b = parseInt(m.scoreB);
+    if (isPlayedMatchWithValidScores(m)) {
+      const a = Number(m.scoreA);
+      const b = Number(m.scoreB);
 
       g[teamAName].played++;
       g[teamBName].played++;
@@ -189,7 +260,7 @@ function getHeadToHeadPointsByTeam(groupStandings, groupMatches) {
   });
 
   groupMatches.forEach(match => {
-    if (!match.played || match.scoreA === "" || match.scoreB === "") return;
+    if (!isPlayedMatchWithValidScores(match)) return;
 
     const teamAId = String(match.teamA);
     const teamBId = String(match.teamB);

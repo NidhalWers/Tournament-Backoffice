@@ -244,6 +244,10 @@ function generateFinalPhase(tournamentId) {
 
   const data = getTournamentData(tournamentId);
 
+  if (!data.isComplete) {
+    throw new Error("Group-stage results are incomplete or invalid.");
+  }
+
   const existing = getSheetData("Matches")
     .filter(m => String(m.tournamentId) === String(tournamentId) && 
     ["QF", "SF", "FINAL"].includes(m.stage));
@@ -520,46 +524,43 @@ function saveScore(matchId, scoreA, scoreB, penaltyWinner) {
   const idxB = headers.indexOf("scoreB");
   const idxPlayed = headers.indexOf("played");
   const idxPenaltyWinner = headers.indexOf("penaltyWinner");
-
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][idxId] === matchId) {
-      sheet.getRange(i + 1, idxA + 1).setValue(scoreA);
-      sheet.getRange(i + 1, idxB + 1).setValue(scoreB);
-      sheet.getRange(i + 1, idxPlayed + 1).setValue(true);
-      sheet.getRange(i + 1, idxPenaltyWinner + 1).setValue(penaltyWinner);
-      break;
-    }
-  }
-
   const idxNextMatchId = headers.indexOf("nextMatchId");
   const idxNextSlot = headers.indexOf("nextSlot");
   const idxTeamA = headers.indexOf("teamA");
   const idxTeamB = headers.indexOf("teamB");
-
   const idxStage = headers.indexOf("stage");
+  const parsedScoreA = parseScore(scoreA);
+  const parsedScoreB = parseScore(scoreB);
+  const matchRowIndex = data.findIndex((row, index) => index > 0 && row[idxId] === matchId);
 
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][idxId] === matchId && isKnockoutMatch(data[i], idxStage)) {
+  if (matchRowIndex === -1) {
+    throw new Error("Match not found");
+  }
 
-      const teamA = data[i][idxTeamA];
-      const teamB = data[i][idxTeamB];
+  const match = data[matchRowIndex];
+  validatePenaltyWinner(match[idxStage], parsedScoreA, parsedScoreB, penaltyWinner);
+
+  sheet.getRange(matchRowIndex + 1, idxA + 1).setValue(parsedScoreA);
+  sheet.getRange(matchRowIndex + 1, idxB + 1).setValue(parsedScoreB);
+  sheet.getRange(matchRowIndex + 1, idxPlayed + 1).setValue(true);
+  sheet.getRange(matchRowIndex + 1, idxPenaltyWinner + 1).setValue(penaltyWinner || "");
+
+  if (isKnockoutMatch(match, idxStage)) {
+      const teamA = match[idxTeamA];
+      const teamB = match[idxTeamB];
 
       let winner = null;
 
-      if (scoreA > scoreB) {
+      if (parsedScoreA > parsedScoreB) {
         winner = teamA;
-      } else if (scoreB > scoreA) {
+      } else if (parsedScoreB > parsedScoreA) {
         winner = teamB;
       } else {
-        if (!penaltyWinner) {
-          throw new Error("Draw: a penalty shootout winner is required");
-        }
-
         winner = penaltyWinner === "A" ? teamA : teamB;
       }
 
-      const nextMatchId = data[i][idxNextMatchId];
-      const nextSlot = data[i][idxNextSlot];
+      const nextMatchId = match[idxNextMatchId];
+      const nextSlot = match[idxNextSlot];
 
       if (nextMatchId) {
         for (let j = 1; j < data.length; j++) {
@@ -575,74 +576,29 @@ function saveScore(matchId, scoreA, scoreB, penaltyWinner) {
           }
         }
       }
-
-      break;
-    }
   }
 }
 
 function saveMatchWithGoals(matchId, scoreA, scoreB, goals, penaltyWinner, fairPlay) {
-  saveScore(matchId, scoreA, scoreB, penaltyWinner);
-  registerScorers(matchId, scoreA, scoreB, goals);
+  const parsedScoreA = parseScore(scoreA);
+  const parsedScoreB = parseScore(scoreB);
+  const match = getMatchById(matchId);
+
+  validatePenaltyWinner(match.stage, parsedScoreA, parsedScoreB, penaltyWinner);
+  validateScorers(match, parsedScoreA, parsedScoreB, goals);
+  validateFairPlay(match, fairPlay);
+
+  saveScore(matchId, parsedScoreA, parsedScoreB, penaltyWinner);
+  registerScorers(matchId, parsedScoreA, parsedScoreB, goals);
   registerFairPlay(matchId, fairPlay);
 }
 
-function registerScorers(matchId, scoreA, scoreB, goals){
-  const parsedScoreA = Number(scoreA);
-  const parsedScoreB = Number(scoreB);
-
-  if (!Number.isInteger(parsedScoreA) || parsedScoreA < 0 ||
-      !Number.isInteger(parsedScoreB) || parsedScoreB < 0) {
-    throw new Error("Invalid scores");
-  }
-
-  if (parsedScoreA === 0 && parsedScoreB === 0) {
-    // No scorer
-    return;
-  }
-
-  if (!Array.isArray(goals)) {
-    throw new Error("Invalid scorer list");
-  }
-
-  const matches = getSheetData("Matches");
-  const match = matches.find(m => String(m.id) === String(matchId));
-
-  if (!match) {
-    throw new Error("Match not found");
-  }
-
-  const tournamentId = match.tournamentId;
-  const teamNames = getTeamNamesByMatchId(matchId);
-
+function registerScorers(matchId, scoreA, scoreB, goals) {
+  const parsedScoreA = parseScore(scoreA);
+  const parsedScoreB = parseScore(scoreB);
+  const match = getMatchById(matchId);
+  const rows = validateScorers(match, parsedScoreA, parsedScoreB, goals);
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Goals");
-
-  const goalCountByTeam = { A: 0, B: 0 };
-  const rows = goals.map(g => {
-    if (!g || (g.team !== "A" && g.team !== "B")) {
-      throw new Error("Invalid scorer team");
-    }
-
-    const playerName = normalizePlayerName(g.player);
-    if (!playerName) {
-      throw new Error("Missing scorer name");
-    }
-
-    goalCountByTeam[g.team]++;
-
-    return [
-      Utilities.getUuid(),
-      tournamentId,
-      matchId,
-      g.team,
-      playerName,
-      g.team === "A" ? teamNames.teamAName : teamNames.teamBName
-    ];
-  });
-
-  if (goalCountByTeam.A > parsedScoreA || goalCountByTeam.B > parsedScoreB) {
-    throw new Error("The number of scorers exceeds the match score");
-  }
 
   if (rows.length > 0) {
     sheet.getRange(
@@ -651,6 +607,99 @@ function registerScorers(matchId, scoreA, scoreB, goals){
       rows.length,
       rows[0].length
     ).setValues(rows);
+  }
+}
+
+function parseScore(value) {
+  if (typeof value === "string" && value.trim() === "") {
+    throw new Error("Invalid scores");
+  }
+
+  if (typeof value !== "string" && typeof value !== "number") {
+    throw new Error("Invalid scores");
+  }
+
+  const score = Number(value);
+  if (!Number.isInteger(score) || score < 0) {
+    throw new Error("Invalid scores");
+  }
+
+  return score;
+}
+
+function getMatchById(matchId) {
+  const match = getSheetData("Matches")
+    .find(currentMatch => String(currentMatch.id) === String(matchId));
+
+  if (!match) {
+    throw new Error("Match not found");
+  }
+
+  return match;
+}
+
+function validatePenaltyWinner(stage, scoreA, scoreB, penaltyWinner) {
+  if (penaltyWinner && penaltyWinner !== "A" && penaltyWinner !== "B") {
+    throw new Error("Invalid penalty shootout winner");
+  }
+
+  if (isKnockoutStage(stage) && scoreA === scoreB &&
+      penaltyWinner !== "A" && penaltyWinner !== "B") {
+    throw new Error("Draw: a penalty shootout winner is required");
+  }
+}
+
+function validateScorers(match, scoreA, scoreB, goals) {
+  if (!Array.isArray(goals)) {
+    throw new Error("Invalid scorer list");
+  }
+
+  const teamNames = getTeamNamesByMatchId(match.id);
+  const goalCountByTeam = { A: 0, B: 0 };
+
+  const rows = goals.map(goal => {
+    if (!goal || (goal.team !== "A" && goal.team !== "B")) {
+      throw new Error("Invalid scorer team");
+    }
+
+    const playerName = normalizePlayerName(goal.player);
+    if (!playerName) {
+      throw new Error("Missing scorer name");
+    }
+
+    goalCountByTeam[goal.team]++;
+
+    return [
+      Utilities.getUuid(), match.tournamentId, match.id, goal.team, playerName,
+      goal.team === "A" ? teamNames.teamAName : teamNames.teamBName
+    ];
+  });
+
+  if (goalCountByTeam.A > scoreA || goalCountByTeam.B > scoreB) {
+    throw new Error("The number of scorers exceeds the match score");
+  }
+
+  return rows;
+}
+
+function validateFairPlay(match, fairPlay) {
+  if (!fairPlay || !fairPlay.teamA || !fairPlay.teamB) {
+    throw new Error("Invalid fair-play data");
+  }
+
+  [fairPlay.teamA.redCards, fairPlay.teamA.seriousRedCards,
+    fairPlay.teamB.redCards, fairPlay.teamB.seriousRedCards].forEach(value => {
+      parseScore(value);
+    });
+
+  if (!fairPlay.solidarityTeamId) return;
+
+  const teamBelongsToTournament = getSheetData("TournamentTeams")
+    .some(team => String(team.tournamentId) === String(match.tournamentId) &&
+      String(team.teamId) === String(fairPlay.solidarityTeamId));
+
+  if (!teamBelongsToTournament) {
+    throw new Error("Invalid solidarity team");
   }
 }
 
@@ -678,11 +727,9 @@ function saveForfeit(matchId, scoreA, scoreB) {
 }
 
 function isKnockoutMatch(currentMatch, idxStage){
+  return isKnockoutStage(currentMatch[idxStage]);
+}
 
-  const isKnockout =
-  currentMatch[idxStage] === "QF" ||
-  currentMatch[idxStage] === "SF" ||
-  currentMatch[idxStage] === "FINAL";
-
-  return isKnockout;
+function isKnockoutStage(stage) {
+  return stage === "QF" || stage === "SF" || stage === "FINAL";
 }

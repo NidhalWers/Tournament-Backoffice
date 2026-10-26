@@ -15,14 +15,26 @@
   let currentMatch = null;
 
   function saveScore(matchId) {
-    const scoreA = parseInt(document.getElementById("a_" + matchId).value);
-    const scoreB = parseInt(document.getElementById("b_" + matchId).value);
+    const scoreAInput = document.getElementById("a_" + matchId).value;
+    const scoreBInput = document.getElementById("b_" + matchId).value;
+
+    if (!isValidScore(scoreAInput) || !isValidScore(scoreBInput)) {
+      alert("Enter a whole number greater than or equal to zero for both scores.");
+      return;
+    }
+
+    const scoreA = Number(scoreAInput);
+    const scoreB = Number(scoreBInput);
 
     currentMatchId = matchId;
     currentScores = { scoreA, scoreB };
     currentMatch = findMatchById(matchId);
 
     openGoalModal(matchId, scoreA, scoreB);
+  }
+
+  function isValidScore(value) {
+    return value.trim() !== "" && Number.isInteger(Number(value)) && Number(value) >= 0;
   }
 
   function openGoalModal(matchId, scoreA, scoreB) {
@@ -189,6 +201,10 @@
             hideLoader();
             closeModal();
             loadTournament();
+          })
+          .withFailureHandler(err => {
+            hideLoader();
+            alert(err.message);
           })
           .saveMatchWithGoals(
             currentMatchId,

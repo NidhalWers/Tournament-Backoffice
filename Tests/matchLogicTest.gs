@@ -82,6 +82,33 @@ function testMatchLogic() {
         assertEquals(false, isKnockoutMatch(["GROUP"], 0));
         assertEquals(false, isKnockoutMatch([""], 0));
       }
+    },
+    {
+      name: "With_ScoreValue_Should_AcceptOnlyNonNegativeIntegers",
+      test: function() {
+        // Arrange / Act / Assert
+        assertEquals(0, parseScore("0"));
+        assertEquals(2, parseScore(2));
+        assertThrows(() => parseScore(""), "Invalid scores");
+        assertThrows(() => parseScore("1.5"), "Invalid scores");
+        assertThrows(() => parseScore(-1), "Invalid scores");
+      }
+    },
+    {
+      name: "With_TiedKnockout_Should_RequireValidPenaltyWinner",
+      test: function() {
+        // Arrange / Act / Assert
+        assertThrows(
+          () => validatePenaltyWinner("QF", 1, 1, null),
+          "penalty shootout winner"
+        );
+        assertThrows(
+          () => validatePenaltyWinner("FINAL", 0, 0, "C"),
+          "penalty shootout winner"
+        );
+        validatePenaltyWinner("SF", 1, 1, "A");
+        validatePenaltyWinner("GROUP", 1, 1, null);
+      }
     }
   ]);
 }

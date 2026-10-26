@@ -12,11 +12,44 @@ function testTournamentLogic() {
       }
     },
     {
-      name: "considers the group stage complete only when every match has been played",
+      name: "With_CompleteGroup_Should_RequireEveryExpectedValidResult",
       test: function() {
-        assertTrue(isGroupStageComplete([]));
-        assertTrue(isGroupStageComplete([{ played: true }, { played: true }]));
-        assertEquals(false, isGroupStageComplete([{ played: true }, { played: false }]));
+        // Arrange
+        const tournamentTeams = groupTeams("A", ["1", "2", "3"]);
+        const completeMatches = [
+          groupMatch("A", "1", "2", 1, 0, true),
+          groupMatch("A", "1", "3", 0, 0, true),
+          groupMatch("A", "2", "3", 0, 1, true)
+        ];
+
+        // Act / Assert
+        assertEquals(false, isGroupStageComplete([], tournamentTeams));
+        assertTrue(isGroupStageComplete(completeMatches, tournamentTeams));
+        assertEquals(false, isGroupStageComplete([
+          groupMatch("A", "1", "2", 1, 0, true),
+          groupMatch("A", "1", "3", "", 0, true),
+          groupMatch("A", "2", "3", 0, 1, true)
+        ], tournamentTeams));
+      }
+    },
+    {
+      name: "With_MissingTeamMatch_Should_BlockGroupStageCompletion",
+      test: function() {
+        // Arrange
+        const tournamentTeams = groupTeams("A", ["1", "2", "3", "4"]);
+        const matches = [
+          groupMatch("A", "1", "2", 1, 0, true),
+          groupMatch("A", "1", "3", 1, 0, true),
+          groupMatch("A", "1", "4", 1, 0, true),
+          groupMatch("A", "2", "3", 1, 0, true),
+          groupMatch("A", "2", "4", 1, 0, true)
+        ];
+
+        // Act
+        const result = isGroupStageComplete(matches, tournamentTeams);
+
+        // Assert
+        assertEquals(false, result);
       }
     },
     {
@@ -42,6 +75,24 @@ function testTournamentLogic() {
         assertDeepEquals(
           { played: 1, win: 0, draw: 1, loss: 0, gf: 0, ga: 0, pts: 1 },
           selectStandingStats(standings.A[1])
+        );
+      }
+    },
+    {
+      name: "With_InvalidPlayedScore_Should_ExcludeMatchFromStandings",
+      test: function() {
+        // Arrange
+        const matches = [
+          groupMatch("A", "1", "2", "", 1, true)
+        ];
+
+        // Act
+        const standings = computeStandings(matches, {}, []);
+
+        // Assert
+        assertDeepEquals(
+          { played: 0, win: 0, draw: 0, loss: 0, gf: 0, ga: 0, pts: 0 },
+          selectStandingStats(standings.A[0])
         );
       }
     },
@@ -152,6 +203,10 @@ function testTournamentLogic() {
 
 function groupMatch(group, teamA, teamB, scoreA, scoreB, played) {
   return { group, teamA, teamB, scoreA, scoreB, played };
+}
+
+function groupTeams(group, teamIds) {
+  return teamIds.map(teamId => ({ group, teamId }));
 }
 
 function selectStandingStats(standing) {
