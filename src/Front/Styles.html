@@ -481,6 +481,181 @@
     background: #f9f9f9;
   }
 
+  .knockout-empty-state {
+    display: grid;
+    min-height: 180px;
+    place-content: center;
+    gap: 10px;
+    border: 1px dashed #c7d6c9;
+    border-radius: 12px;
+    background: #f8fbf8;
+    color: #66796a;
+    text-align: center;
+  }
+
+  .knockout-empty-state span {
+    font-size: 28px;
+  }
+
+  .knockout-empty-state p {
+    margin: 0;
+  }
+
+  .knockout-scroll-area {
+    width: 100%;
+    overflow-x: auto;
+    padding: 4px 0 16px;
+    scrollbar-color: #93b197 #edf4ee;
+  }
+
+  .knockout-board {
+    display: grid;
+    grid-template-columns: repeat(5, 230px);
+    align-items: start;
+    width: max-content;
+    min-width: 100%;
+    gap: 28px;
+    padding: 8px 2px;
+    box-sizing: border-box;
+  }
+
+  .knockout-round {
+    min-width: 0;
+  }
+
+  .knockout-round h3 {
+    margin: 0 0 10px;
+    color: #48624d;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .knockout-round-matches {
+    display: grid;
+    gap: 18px;
+  }
+
+  .knockout-round--semi-left,
+  .knockout-round--semi-right {
+    margin-top: 104px;
+  }
+
+  .knockout-round--final {
+    margin-top: 205px;
+  }
+
+  .knockout-round--semi-direct {
+    margin-top: 48px;
+  }
+
+  .knockout-match-card {
+    overflow: hidden;
+    border: 1px solid #d6e1d7;
+    border-radius: 10px;
+    background: white;
+    box-shadow: 0 3px 12px rgba(34, 77, 40, 0.08);
+  }
+
+  .knockout-match-card.is-played {
+    border-color: #c2dcc5;
+  }
+
+  .knockout-teams {
+    padding: 6px 10px;
+  }
+
+  .knockout-team-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 35px;
+    border-bottom: 1px solid #eef3ee;
+  }
+
+  .knockout-team-line:last-child {
+    border-bottom: 0;
+  }
+
+  .knockout-team-name {
+    min-width: 0;
+    overflow: hidden;
+    color: #253b29;
+    font-size: 13px;
+    font-weight: bold;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .knockout-score-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .knockout-score-actions input {
+    box-sizing: border-box;
+    width: 34px;
+    height: 28px;
+    padding: 2px;
+    border: 1px solid #bfd0c1;
+    border-radius: 5px;
+    text-align: center;
+  }
+
+  .knockout-score-actions .forfeit-btn {
+    padding: 4px 5px;
+    font-size: 10px;
+  }
+
+  .knockout-scorers {
+    display: grid;
+    gap: 5px;
+    padding: 9px 10px;
+    border-top: 1px solid #e6eee7;
+    background: #f7fbf7;
+  }
+
+  .knockout-scorers p,
+  .knockout-penalty {
+    margin: 0;
+    color: #5a6c5e;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .knockout-scorers strong {
+    display: block;
+    overflow: hidden;
+    color: #38563d;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .knockout-penalty {
+    padding: 8px 10px;
+    border-top: 1px solid #efe3bf;
+    background: #fffdf5;
+    color: #76602b;
+  }
+
+  .knockout-match-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: 35px;
+    padding: 7px 10px;
+    border-top: 1px solid #edf2ed;
+  }
+
+  .knockout-played-status {
+    color: #6d7b70;
+    font-size: 11px;
+    font-style: italic;
+  }
+
   .team-line {
     display: flex;
     justify-content: space-between;
@@ -1042,6 +1217,66 @@
 
     .goal-modal-actions button {
       flex: 1;
+    }
+
+    .knockout-scroll-area {
+      overflow-x: visible;
+      padding-bottom: 0;
+    }
+
+    .knockout-board {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-width: 0;
+      gap: 22px;
+      padding: 0;
+    }
+
+    .knockout-round {
+      width: 100%;
+      margin-top: 0;
+    }
+
+    .knockout-round--quarter-left {
+      order: 1;
+    }
+
+    .knockout-round--quarter-right {
+      order: 2;
+    }
+
+    .knockout-round--semi-left,
+    .knockout-round--semi-right,
+    .knockout-round--semi-direct {
+      order: 3;
+    }
+
+    .knockout-round--final {
+      order: 4;
+    }
+
+    .knockout-round h3 {
+      text-align: left;
+    }
+
+    .knockout-round-matches {
+      gap: 12px;
+    }
+
+    .knockout-match-card {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .knockout-score-actions input {
+      width: 42px;
+      height: 32px;
+    }
+
+    .knockout-score-actions .forfeit-btn {
+      padding: 5px 7px;
+      font-size: 11px;
     }
   }
 </style>
