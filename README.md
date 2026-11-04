@@ -170,7 +170,8 @@ The application dynamically detects the tournament format based on:
 ```javascript
 {
   groupCount,
-  groupSize
+  groupSize,
+  groupLegs
 }
 ```
 
@@ -178,13 +179,14 @@ The number of qualified teams determines the knockout structure.
 
 Currently supported formats include:
 
-| Groups | Teams per group | Qualification | Knockout stage |
+| Groups | Teams per group | Group legs | Qualification | Knockout stage |
 |---|---:|---|---|
-| 3 | 5 | Top 2 + 2 best third-placed teams | QF → SF → Final |
-| 3 | 4 | Top 2 + 2 best third-placed teams | QF → SF → Final |
-| 2 | 5 | Top 4 from each group | QF → SF → Final |
-| 2 | 4 | Top 2 from each group | SF → Final |
-| 2 | 3 | Top 2 from each group | SF → Final |
+| 3 | 5 | 1 | Top 2 + 2 best third-placed teams | QF → SF → Final |
+| 3 | 4 | 1 | Top 2 + 2 best third-placed teams | QF → SF → Final |
+| 2 | 5 | 1 | Top 4 from each group | QF → SF → Final |
+| 2 | 4 | 1 | Top 2 from each group | SF → Final |
+| 2 | 3 | 1 | Top 2 from each group | SF → Final |
+| 2 | 3 | 2 | Top 2 from each group | SF → Final (home and away) |
 
 This allows the same application to support tournaments with different numbers of participating teams.
 
@@ -579,7 +581,13 @@ id
 name
 date
 status
+groupLegs
 ```
+
+`groupLegs` controls the number of group-stage meetings between each pair of teams:
+
+- `1` (or an empty value) for a single round-robin;
+- `2` for home-and-away fixtures.
 
 ---
 
@@ -784,6 +792,8 @@ This creates the required sheets and headers when they do not already exist.
 ## 5. Add tournament data
 
 Create a tournament in the `Tournaments` sheet.
+
+Set `groupLegs` to `2` for a tournament with two groups of three teams playing home and away. Leave it empty or set it to `1` for the existing single round-robin behavior.
 
 Then add teams to `Teams`.
 

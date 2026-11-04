@@ -6,8 +6,31 @@ function getTournaments() {
     id: String(t.id),
     name: String(t.name),
     status: String(t.status),
+    groupLegs: getTournamentGroupLegsFromRow(t),
     date: t.date ? new Date(t.date).toISOString() : null
   }));
+}
+
+function getTournamentGroupLegs(tournamentId) {
+  const tournament = getSheetData("Tournaments")
+    .find(currentTournament => String(currentTournament.id) === String(tournamentId));
+
+  if (!tournament) {
+    throw new Error("Tournament not found");
+  }
+
+  return getTournamentGroupLegsFromRow(tournament);
+}
+
+function getTournamentGroupLegsFromRow(tournament) {
+  if (tournament.groupLegs === "" || tournament.groupLegs == null) return 1;
+
+  const groupLegs = Number(tournament.groupLegs);
+  if (groupLegs !== 1 && groupLegs !== 2) {
+    throw new Error("Invalid group-stage legs configuration");
+  }
+
+  return groupLegs;
 }
 
 function getTournamentData(tournamentId) {
@@ -32,7 +55,8 @@ function getTournamentData(tournamentId) {
 
   const tournamentTeams = getSheetData("TournamentTeams")
     .filter(team => String(team.tournamentId) === String(tournamentId));
-  const isComplete = isGroupStageComplete(matches, tournamentTeams);
+  const groupLegs = getTournamentGroupLegs(tournamentId);
+  const isComplete = isGroupStageComplete(matches, tournamentTeams, groupLegs);
   
   const knockoutMatches = getSheetData("Matches")
     .filter(m => String(m.tournamentId) === String(tournamentId) && m.stage !== "GROUP")
@@ -65,7 +89,7 @@ function hasMatches(tournamentId) {
     .some(m => m.tournamentId === tournamentId && m.stage === "GROUP");
 }
 
-function isGroupStageComplete(matches, tournamentTeams) {
+function isGroupStageComplete(matches, tournamentTeams, groupLegs) {
   if (!Array.isArray(matches) || matches.length === 0 || !Array.isArray(tournamentTeams)) {
     return false;
   }
@@ -82,22 +106,30 @@ function isGroupStageComplete(matches, tournamentTeams) {
 
   const groups = Object.keys(teamIdsByGroup);
   if (groups.length === 0) return false;
+  if (groupLegs === 2 &&
+      (groups.length !== 2 || groups.some(group => teamIdsByGroup[group].length !== 3))) {
+    return false;
+  }
   if (matches.some(match => !teamIdsByGroup[String(match.group)])) return false;
 
   return groups.every(group => isGroupComplete(
     matches.filter(match => String(match.group) === group),
-    teamIdsByGroup[group]
+    teamIdsByGroup[group],
+    groupLegs
   ));
 }
 
-function isGroupComplete(matches, teamIds) {
+function isGroupComplete(matches, teamIds, groupLegs) {
+  const legs = groupLegs || 1;
   const uniqueTeamIds = [...new Set(teamIds)];
   if (uniqueTeamIds.length < 2 || uniqueTeamIds.length !== teamIds.length) return false;
 
   const teamIdsSet = new Set(uniqueTeamIds);
-  const expectedMatchCount = uniqueTeamIds.length * (uniqueTeamIds.length - 1) / 2;
+  const expectedPairCount = uniqueTeamIds.length * (uniqueTeamIds.length - 1) / 2;
+  const expectedMatchCount = expectedPairCount * legs;
   const matchCountByTeam = {};
   const pairKeys = new Set();
+  const directedPairKeys = new Set();
 
   uniqueTeamIds.forEach(teamId => matchCountByTeam[teamId] = 0);
 
@@ -114,14 +146,23 @@ function isGroupComplete(matches, teamIds) {
     }
 
     const pairKey = [teamA, teamB].sort().join("|");
-    if (pairKeys.has(pairKey)) return false;
+    const directedPairKey = `${teamA}|${teamB}`;
+    if (legs === 1 && pairKeys.has(pairKey)) return false;
+    if (legs === 2 && directedPairKeys.has(directedPairKey)) return false;
 
     pairKeys.add(pairKey);
+    directedPairKeys.add(directedPairKey);
     matchCountByTeam[teamA]++;
     matchCountByTeam[teamB]++;
   }
 
-  return uniqueTeamIds.every(teamId => matchCountByTeam[teamId] === uniqueTeamIds.length - 1);
+  if (!uniqueTeamIds.every(teamId => matchCountByTeam[teamId] === (uniqueTeamIds.length - 1) * legs)) {
+    return false;
+  }
+
+  if (legs === 2 && pairKeys.size !== expectedPairCount) return false;
+
+  return true;
 }
 
 function isPlayedMatchWithValidScores(match) {

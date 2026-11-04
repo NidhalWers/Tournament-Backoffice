@@ -12,6 +12,19 @@ function testTournamentLogic() {
       }
     },
     {
+      name: "With_GroupLegsConfiguration_Should_DefaultToSingleLegAndAcceptReturnLegs",
+      test: function() {
+        // Arrange / Act / Assert
+        assertEquals(1, getTournamentGroupLegsFromRow({}));
+        assertEquals(1, getTournamentGroupLegsFromRow({ groupLegs: "1" }));
+        assertEquals(2, getTournamentGroupLegsFromRow({ groupLegs: "2" }));
+        assertThrows(
+          () => getTournamentGroupLegsFromRow({ groupLegs: "3" }),
+          "Invalid group-stage legs configuration"
+        );
+      }
+    },
+    {
       name: "With_CompleteGroup_Should_RequireEveryExpectedValidResult",
       test: function() {
         // Arrange
@@ -50,6 +63,25 @@ function testTournamentLogic() {
 
         // Assert
         assertEquals(false, result);
+      }
+    },
+    {
+      name: "With_TwoLegs_Should_RequireTwoDirectionsAndFourMatchesPerTeam",
+      test: function() {
+        // Arrange
+        const tournamentTeams = groupTeams("A", ["1", "2", "3"])
+          .concat(groupTeams("B", ["4", "5", "6"]));
+        const matches = generateRoundRobinLegs(["1", "2", "3"], 2)
+          .map(match => groupMatch("A", match[0], match[1], 1, 0, true))
+          .concat(generateRoundRobinLegs(["4", "5", "6"], 2)
+            .map(match => groupMatch("B", match[0], match[1], 1, 0, true)));
+
+        // Act
+        const result = isGroupStageComplete(matches, tournamentTeams, 2);
+
+        // Assert
+        assertTrue(result);
+        assertEquals(false, isGroupStageComplete(matches.slice(0, 5), tournamentTeams, 2));
       }
     },
     {

@@ -34,6 +34,41 @@ function testMatchLogic() {
       }
     },
     {
+      name: "With_TwoLegs_Should_GenerateEachPairInBothDirections",
+      test: function() {
+        // Arrange
+        const teams = ["A", "B", "C"];
+
+        // Act
+        const matches = generateRoundRobinLegs(teams, 2);
+
+        // Assert
+        assertEquals(6, matches.length);
+        assertTrue(matches.every(match => match[0] !== match[1]));
+        teams.forEach(teamA => {
+          teams.forEach(teamB => {
+            if (teamA === teamB) return;
+
+            assertEquals(
+              1,
+              matches.filter(match => match[0] === teamA && match[1] === teamB).length
+            );
+          });
+        });
+      }
+    },
+    {
+      name: "With_TwoLegs_Should_RequireTwoGroupsOfThreeTeams",
+      test: function() {
+        // Arrange / Act / Assert
+        validateGroupLegsForGroups({ A: ["1", "2", "3"], B: ["4", "5", "6"] }, 2);
+        assertThrows(
+          () => validateGroupLegsForGroups({ A: ["1", "2", "3", "4"], B: ["5", "6", "7", "8"] }, 2),
+          "two groups of three"
+        );
+      }
+    },
+    {
       name: "With_TeamList_Should_NotModifyProvidedList",
       test: function() {
         // Arrange

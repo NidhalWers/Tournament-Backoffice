@@ -3,6 +3,7 @@ function generateGroupMatches(tournamentId) {
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const matchesSheet = ss.getSheetByName("Matches");
+  const groupLegs = getTournamentGroupLegs(tournamentId);
 
   const existing = getSheetData("Matches")
     .filter(m => String(m.tournamentId) === String(tournamentId));
@@ -36,28 +37,27 @@ function generateGroupMatches(tournamentId) {
   });
   
   Logger.log("groups : "+JSON.stringify(groups));
+  validateGroupLegsForGroups(groups, groupLegs);
 
   const matches = [];
 
   Object.keys(groups).forEach(group => {
     const teams = groups[group];
 
-    const rounds = generateRoundRobin(teams);
+    const scheduledMatches = generateRoundRobinLegs(teams, groupLegs);
 
-    rounds.forEach(round => {
-      round.forEach(match => {
-        matches.push([
-          Utilities.getUuid(),
-          tournamentId,
-          "GROUP",
-          group,
-          match[0],
-          match[1],
-          "",
-          "",
-          false
-        ]);
-      });
+    scheduledMatches.forEach(match => {
+      matches.push([
+        Utilities.getUuid(),
+        tournamentId,
+        "GROUP",
+        group,
+        match[0],
+        match[1],
+        "",
+        "",
+        false
+      ]);
     });
   });
 
@@ -71,6 +71,26 @@ function generateGroupMatches(tournamentId) {
   }
 
   return matches;
+}
+
+function validateGroupLegsForGroups(groups, groupLegs) {
+  if (groupLegs !== 2) return;
+
+  const groupSizes = Object.values(groups).map(group => group.length);
+  if (Object.keys(groups).length !== 2 || groupSizes.some(size => size !== 3)) {
+    throw new Error("Home-and-away group matches require two groups of three teams");
+  }
+}
+
+function generateRoundRobinLegs(teams, groupLegs) {
+  const legs = groupLegs || 1;
+  const firstLeg = generateRoundRobin(teams)
+    .reduce((all, round) => all.concat(round), []);
+
+  if (legs === 1) return firstLeg;
+
+  const returnLeg = firstLeg.map(match => [match[1], match[0]]);
+  return firstLeg.concat(returnLeg);
 }
 
 function generateRoundRobin(teams) {
