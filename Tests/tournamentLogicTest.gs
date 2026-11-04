@@ -82,6 +82,36 @@ function testTournamentLogic() {
         // Assert
         assertTrue(result);
         assertEquals(false, isGroupStageComplete(matches.slice(0, 5), tournamentTeams, 2));
+        assertEquals(false, isGroupStageComplete(
+          matches.slice(0, 5).concat([matches[0]]),
+          tournamentTeams,
+          2
+        ));
+      }
+    },
+    {
+      name: "With_TwoLegs_Should_AccumulateAllMatchesAndHeadToHeadResults",
+      test: function() {
+        // Arrange
+        const matches = [
+          groupMatch("A", "1", "2", 1, 0, true),
+          groupMatch("A", "2", "1", 2, 0, true),
+          groupMatch("A", "1", "3", 1, 0, true),
+          groupMatch("A", "3", "1", 0, 1, true),
+          groupMatch("A", "2", "3", 1, 0, true),
+          groupMatch("A", "3", "2", 0, 1, true)
+        ];
+
+        // Act
+        const standings = computeStandings(matches, {}, []);
+        const headToHeadPoints = getHeadToHeadPointsByTeam([
+          { teamId: "1", pts: 6, gf: 3, ga: 2 },
+          { teamId: "2", pts: 6, gf: 4, ga: 3 }
+        ], matches);
+
+        // Assert
+        assertTrue(standings.A.every(standing => standing.played === 4));
+        assertDeepEquals({ "1": 3, "2": 3 }, headToHeadPoints);
       }
     },
     {

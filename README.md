@@ -165,7 +165,7 @@ Standings are recalculated whenever tournament data is loaded.
 
 # 🏟️ Tournament Formats
 
-The application dynamically detects the tournament format based on:
+The application dynamically detects the group structure and reads the number of legs from the tournament configuration:
 
 ```javascript
 {

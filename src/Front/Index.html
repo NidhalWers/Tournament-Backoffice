@@ -25,6 +25,9 @@
     <button id="tab-stats" class="tab" onclick="showTab('stats')">
       📊 Stats
     </button>
+    <button id="tab-aggregate" class="tab" onclick="showTab('aggregate')">
+      🏅 Overall standings
+    </button>
   </div>
 
   <hr>
@@ -150,12 +153,29 @@
     <div id="scorers"></div>
   </div>
 
+  <div id="aggregateTab" style="display:none;">
+    <h2>Overall standings</h2>
+    <section class="aggregate-filter" aria-label="Tournament date range">
+      <label for="aggregateStartDate">
+        <span>From</span>
+        <input id="aggregateStartDate" type="date">
+      </label>
+      <label for="aggregateEndDate">
+        <span>To</span>
+        <input id="aggregateEndDate" type="date">
+      </label>
+      <button type="button" onclick="loadAggregateStandings()">Apply period</button>
+    </section>
+    <div id="aggregateStandings"></div>
+  </div>
+
   <?!= include('Main'); ?>
   <?!= include('Referees'); ?>
   <?!= include('Matches'); ?>
   <?!= include('Bracket'); ?>
   <?!= include('Goals'); ?>
   <?!= include('Stats'); ?>
+  <?!= include('AggregateStandings'); ?>
 
   <div id="loader" class="loader-overlay" style="display:none;">
     <div class="spinner"></div>
