@@ -595,6 +595,10 @@ groupLegs
 
 Stores available teams.
 
+Teams can be added from the **Teams** tab of the Web App. A name is trimmed and
+internal whitespace is collapsed before storage. Duplicate detection ignores case
+and extra whitespace; accents and punctuation remain part of the team identity.
+
 Example columns:
 
 ```text

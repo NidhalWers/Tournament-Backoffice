@@ -5,6 +5,7 @@ function testAllLogic() {
     testRefereeLogic(),
     testFairPlayLogic(),
     testTournamentLogic(),
-    testAggregateStandingsLogic()
+    testAggregateStandingsLogic(),
+    testTeamLogic()
   ];
 }

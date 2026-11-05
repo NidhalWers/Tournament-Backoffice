@@ -1,0 +1,90 @@
+<script>
+
+  let isCreatingTeam = false;
+
+  function loadTeams() {
+    const list = document.getElementById("teamsList");
+
+    list.innerHTML = '<p class="teams-empty-state">Loading teams…</p>';
+
+    google.script.run
+      .withSuccessHandler(renderTeams)
+      .withFailureHandler(error => {
+        list.innerHTML = '<p class="teams-error-state">Unable to load the teams.</p>';
+        console.error(error);
+      })
+      .getTeams();
+  }
+
+  function renderTeams(teams) {
+    const list = document.getElementById("teamsList");
+    const count = document.getElementById("teamCount");
+
+    count.textContent = `${teams.length} registered`;
+    list.innerHTML = "";
+
+    if (teams.length === 0) {
+      const emptyState = document.createElement("p");
+      emptyState.className = "teams-empty-state";
+      emptyState.textContent = "No team registered yet. Add the first one above.";
+      list.appendChild(emptyState);
+      return;
+    }
+
+    const teamList = document.createElement("ul");
+    teamList.className = "teams-list";
+
+    teams.forEach(team => {
+      const item = document.createElement("li");
+      item.textContent = team.name;
+      teamList.appendChild(item);
+    });
+
+    list.appendChild(teamList);
+  }
+
+  function addTeam() {
+    if (isCreatingTeam) return;
+
+    const input = document.getElementById("teamName");
+    const button = document.getElementById("addTeamButton");
+    const feedback = document.getElementById("teamFormFeedback");
+    const teamName = input.value.trim().replace(/\s+/g, " ");
+
+    if (!teamName) {
+      feedback.textContent = "Enter a team name.";
+      feedback.className = "team-form-feedback is-error";
+      input.focus();
+      return;
+    }
+
+    isCreatingTeam = true;
+    button.disabled = true;
+    button.textContent = "Adding…";
+    feedback.textContent = "Saving the team…";
+    feedback.className = "team-form-feedback";
+
+    google.script.run
+      .withSuccessHandler(team => {
+        isCreatingTeam = false;
+        button.disabled = false;
+        button.textContent = "Add team";
+        input.value = "";
+        feedback.textContent = `${team.name} was added.`;
+        feedback.className = "team-form-feedback is-success";
+        loadTeams();
+        document.dispatchEvent(new CustomEvent("teams:updated", { detail: team }));
+        input.focus();
+      })
+      .withFailureHandler(error => {
+        isCreatingTeam = false;
+        button.disabled = false;
+        button.textContent = "Add team";
+        feedback.textContent = error.message || "Unable to add the team.";
+        feedback.className = "team-form-feedback is-error";
+        input.focus();
+      })
+      .createTeam(teamName);
+  }
+
+</script>

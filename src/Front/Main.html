@@ -100,6 +100,7 @@
     document.getElementById("knockoutTab").style.display = "none";
     document.getElementById("statsTab").style.display = "none";
     document.getElementById("aggregateTab").style.display = "none";
+    document.getElementById("teamsTab").style.display = "none";
 
     // reset active
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
@@ -123,6 +124,11 @@
       document.getElementById("aggregateTab").style.display = "block";
       document.getElementById("tab-aggregate").classList.add("active");
       loadAggregateStandings();
+    }
+    if (tab === "teams") {
+      document.getElementById("teamsTab").style.display = "block";
+      document.getElementById("tab-teams").classList.add("active");
+      loadTeams();
     }
   }
 

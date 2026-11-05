@@ -28,6 +28,9 @@
     <button id="tab-aggregate" class="tab" onclick="showTab('aggregate')">
       🏅 Overall standings
     </button>
+    <button id="tab-teams" class="tab" onclick="showTab('teams')">
+      👥 Teams
+    </button>
   </div>
 
   <hr>
@@ -169,6 +172,31 @@
     <div id="aggregateStandings"></div>
   </div>
 
+  <div id="teamsTab" style="display:none;">
+    <section class="teams-manager" aria-labelledby="teamsTitle">
+      <div class="teams-heading">
+        <div>
+          <p class="teams-eyebrow">Tournament registration</p>
+          <h2 id="teamsTitle">Registered teams</h2>
+          <p>Add teams once so they are ready for future tournaments.</p>
+        </div>
+        <span id="teamCount" class="team-count">0 registered</span>
+      </div>
+
+      <form class="team-form" onsubmit="event.preventDefault(); addTeam();">
+        <label for="teamName">
+          <span>Team name</span>
+          <input id="teamName" type="text" autocomplete="organization" placeholder="e.g. Les Rapaces" required>
+        </label>
+        <button id="addTeamButton" type="submit">Add team</button>
+      </form>
+      <p id="teamFormFeedback" class="team-form-feedback" role="status" aria-live="polite"></p>
+      <p class="teams-hint">Names ignore case and extra spaces. Accents and punctuation distinguish teams.</p>
+
+      <div id="teamsList"></div>
+    </section>
+  </div>
+
   <?!= include('Main'); ?>
   <?!= include('Referees'); ?>
   <?!= include('Matches'); ?>
@@ -176,6 +204,7 @@
   <?!= include('Goals'); ?>
   <?!= include('Stats'); ?>
   <?!= include('AggregateStandings'); ?>
+  <?!= include('Teams'); ?>
 
   <div id="loader" class="loader-overlay" style="display:none;">
     <div class="spinner"></div>
