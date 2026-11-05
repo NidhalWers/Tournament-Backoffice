@@ -12,15 +12,27 @@ function testTournamentLogic() {
       }
     },
     {
-      name: "With_GroupLegsConfiguration_Should_DefaultToSingleLegAndAcceptReturnLegs",
+      name: "With_ParticipantCount_Should_DeriveGroupConfiguration",
       test: function() {
-        // Arrange / Act / Assert
-        assertEquals(1, getTournamentGroupLegsFromRow({}));
-        assertEquals(1, getTournamentGroupLegsFromRow({ groupLegs: "1" }));
-        assertEquals(2, getTournamentGroupLegsFromRow({ groupLegs: "2" }));
+        // Arrange
+
+        // Act
+        const sixTeamConfiguration = getTournamentGroupConfiguration(6);
+        const fifteenTeamConfiguration = getTournamentGroupConfiguration(15);
+        const getUnsupportedConfiguration = () => getTournamentGroupConfiguration(7);
+
+        // Assert
+        assertDeepEquals(
+          { groupCount: 2, groupSize: 3, groupLegs: 2 },
+          sixTeamConfiguration
+        );
+        assertDeepEquals(
+          { groupCount: 3, groupSize: 5, groupLegs: 1 },
+          fifteenTeamConfiguration
+        );
         assertThrows(
-          () => getTournamentGroupLegsFromRow({ groupLegs: "3" }),
-          "Invalid group-stage legs configuration"
+          getUnsupportedConfiguration,
+          "Unsupported tournament team count"
         );
       }
     },

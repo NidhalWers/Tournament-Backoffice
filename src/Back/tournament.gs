@@ -6,7 +6,6 @@ function getTournaments() {
     id: String(t.id),
     name: String(t.name),
     status: String(t.status),
-    groupLegs: getTournamentGroupLegsFromRow(t),
     date: t.date ? new Date(t.date).toISOString() : null
   }));
 }
@@ -19,18 +18,11 @@ function getTournamentGroupLegs(tournamentId) {
     throw new Error("Tournament not found");
   }
 
-  return getTournamentGroupLegsFromRow(tournament);
-}
+  const participantCount = getSheetData("TournamentTeams")
+    .filter(team => String(team.tournamentId) === String(tournamentId))
+    .length;
 
-function getTournamentGroupLegsFromRow(tournament) {
-  if (tournament.groupLegs === "" || tournament.groupLegs == null) return 1;
-
-  const groupLegs = Number(tournament.groupLegs);
-  if (groupLegs !== 1 && groupLegs !== 2) {
-    throw new Error("Invalid group-stage legs configuration");
-  }
-
-  return groupLegs;
+  return getTournamentGroupConfiguration(participantCount).groupLegs;
 }
 
 function getTournamentData(tournamentId) {

@@ -101,6 +101,7 @@
     document.getElementById("statsTab").style.display = "none";
     document.getElementById("aggregateTab").style.display = "none";
     document.getElementById("teamsTab").style.display = "none";
+    document.getElementById("tournamentCreationTab").style.display = "none";
 
     // reset active
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
@@ -129,6 +130,11 @@
       document.getElementById("teamsTab").style.display = "block";
       document.getElementById("tab-teams").classList.add("active");
       loadTeams();
+    }
+    if (tab === "create-tournament") {
+      document.getElementById("tournamentCreationTab").style.display = "block";
+      document.getElementById("tab-create-tournament").classList.add("active");
+      loadTournamentCreationData();
     }
   }
 

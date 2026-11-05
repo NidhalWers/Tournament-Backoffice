@@ -6,6 +6,7 @@ function testAllLogic() {
     testFairPlayLogic(),
     testTournamentLogic(),
     testAggregateStandingsLogic(),
-    testTeamLogic()
+    testTeamLogic(),
+    testTournamentCreationLogic()
   ];
 }

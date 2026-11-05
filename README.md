@@ -165,13 +165,12 @@ Standings are recalculated whenever tournament data is loaded.
 
 # 🏟️ Tournament Formats
 
-The application dynamically detects the group structure and reads the number of legs from the tournament configuration:
+The application dynamically derives the group structure from the number of participating teams:
 
 ```javascript
 {
   groupCount,
-  groupSize,
-  groupLegs
+  groupSize
 }
 ```
 
@@ -179,14 +178,13 @@ The number of qualified teams determines the knockout structure.
 
 Currently supported formats include:
 
-| Groups | Teams per group | Group legs | Qualification | Knockout stage |
+| Groups | Teams per group | Qualification | Knockout stage |
 |---|---:|---|---|
-| 3 | 5 | 1 | Top 2 + 2 best third-placed teams | QF → SF → Final |
-| 3 | 4 | 1 | Top 2 + 2 best third-placed teams | QF → SF → Final |
-| 2 | 5 | 1 | Top 4 from each group | QF → SF → Final |
-| 2 | 4 | 1 | Top 2 from each group | SF → Final |
-| 2 | 3 | 1 | Top 2 from each group | SF → Final |
-| 2 | 3 | 2 | Top 2 from each group | SF → Final (home and away) |
+| 3 | 5 | Top 2 + 2 best third-placed teams | QF → SF → Final |
+| 3 | 4 | Top 2 + 2 best third-placed teams | QF → SF → Final |
+| 2 | 5 | Top 4 from each group | QF → SF → Final |
+| 2 | 4 | Top 2 from each group | SF → Final |
+| 2 | 3 | Top 2 from each group | SF → Final (home and away) |
 
 This allows the same application to support tournaments with different numbers of participating teams.
 
@@ -581,13 +579,12 @@ id
 name
 date
 status
-groupLegs
 ```
 
-`groupLegs` controls the number of group-stage meetings between each pair of teams:
-
-- `1` (or an empty value) for a single round-robin;
-- `2` for home-and-away fixtures.
+Tournaments created from the Web App start with status `REGISTRATION`. Their group
+configuration is derived from the selected participant count and is not stored in
+the spreadsheet. Six participating teams always use home-and-away fixtures. The
+status changes to `GROUP` after group matches are generated.
 
 ---
 
@@ -795,13 +792,9 @@ This creates the required sheets and headers when they do not already exist.
 
 ## 5. Add tournament data
 
-Create a tournament in the `Tournaments` sheet.
-
-Set `groupLegs` to `2` for a tournament with two groups of three teams playing home and away. Leave it empty or set it to `1` for the existing single round-robin behavior.
-
-Then add teams to `Teams`.
-
-Finally, assign teams to groups using `TournamentTeams`.
+Create a tournament from the **Create tournament** tab, then select its registered
+teams and format. The tournament is created in `REGISTRATION` without group
+assignments or matches. The group draw is the next step.
 
 Example:
 

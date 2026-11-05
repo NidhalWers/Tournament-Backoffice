@@ -37,7 +37,7 @@ function generateGroupMatches(tournamentId) {
   });
   
   Logger.log("groups : "+JSON.stringify(groups));
-  validateGroupLegsForGroups(groups, groupLegs);
+  validateTournamentGroupsForGeneration(groups);
 
   const matches = [];
 
@@ -68,6 +68,7 @@ function generateGroupMatches(tournamentId) {
       matches.length,
       matches[0].length
     ).setValues(matches);
+    setTournamentStatus(tournamentId, "GROUP");
   }
 
   return matches;
@@ -80,6 +81,21 @@ function validateGroupLegsForGroups(groups, groupLegs) {
   if (Object.keys(groups).length !== 2 || groupSizes.some(size => size !== 3)) {
     throw new Error("Home-and-away group matches require two groups of three teams");
   }
+}
+
+function validateTournamentGroupsForGeneration(groups) {
+  const groupNames = Object.keys(groups);
+  const participantCount = Object.values(groups)
+    .reduce((count, teams) => count + teams.length, 0);
+  const configuration = getTournamentGroupConfiguration(participantCount);
+
+  if (groupNames.some(group => !group) ||
+      groupNames.length !== configuration.groupCount ||
+      groupNames.some(group => groups[group].length !== configuration.groupSize)) {
+    throw new Error("Draw complete groups before generating group matches.");
+  }
+
+  validateGroupLegsForGroups(groups, configuration.groupLegs);
 }
 
 function generateRoundRobinLegs(teams, groupLegs) {

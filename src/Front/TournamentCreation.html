@@ -1,0 +1,185 @@
+<script>
+
+  let tournamentCreationData = null;
+  let isCreatingTournament = false;
+  let selectedTournamentTeamIds = new Set();
+
+  function loadTournamentCreationData() {
+    const teamList = document.getElementById("tournamentTeamList");
+    teamList.innerHTML = '<p class="tournament-team-empty">Loading available teams…</p>';
+
+    google.script.run
+      .withSuccessHandler(renderTournamentCreationData)
+      .withFailureHandler(error => {
+        teamList.innerHTML = '<p class="tournament-team-error">Unable to load the available teams.</p>';
+        console.error(error);
+      })
+      .getTournamentCreationData();
+  }
+
+  function renderTournamentCreationData(data) {
+    tournamentCreationData = data;
+    const formatSelect = document.getElementById("tournamentFormat");
+
+    formatSelect.innerHTML = "";
+    data.formats.forEach(format => {
+      const option = document.createElement("option");
+      option.value = format.id;
+      option.textContent = format.label;
+      formatSelect.appendChild(option);
+    });
+
+    renderTournamentTeamSelection();
+  }
+
+  function renderTournamentTeamSelection() {
+    const teamList = document.getElementById("tournamentTeamList");
+    const filter = document.getElementById("tournamentTeamFilter").value.toLocaleLowerCase("fr-FR");
+    const selectedTeamIds = selectedTournamentTeamIds;
+    const teams = tournamentCreationData ? tournamentCreationData.teams : [];
+
+    teamList.innerHTML = "";
+
+    const matchingTeams = teams.filter(team =>
+      team.name.toLocaleLowerCase("fr-FR").includes(filter)
+    );
+
+    if (matchingTeams.length === 0) {
+      const emptyState = document.createElement("p");
+      emptyState.className = "tournament-team-empty";
+      emptyState.textContent = teams.length === 0
+        ? "No registered team is available yet."
+        : "No team matches this search.";
+      teamList.appendChild(emptyState);
+      updateTournamentSelectionCount();
+      return;
+    }
+
+    matchingTeams.forEach(team => {
+      const label = document.createElement("label");
+      label.className = "tournament-team-option";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = team.id;
+      checkbox.checked = selectedTeamIds.has(String(team.id));
+      checkbox.onchange = () => {
+        if (checkbox.checked) {
+          selectedTournamentTeamIds.add(String(team.id));
+        } else {
+          selectedTournamentTeamIds.delete(String(team.id));
+        }
+
+        updateTournamentSelectionCount();
+      };
+
+      const name = document.createElement("span");
+      name.textContent = team.name;
+
+      label.appendChild(checkbox);
+      label.appendChild(name);
+      teamList.appendChild(label);
+    });
+
+    updateTournamentSelectionCount();
+  }
+
+  function getSelectedTournamentTeamIds() {
+    return Array.from(selectedTournamentTeamIds);
+  }
+
+  function getSelectedTournamentFormat() {
+    if (!tournamentCreationData) return null;
+
+    const formatId = document.getElementById("tournamentFormat").value;
+    return tournamentCreationData.formats.find(format => format.id === formatId) || null;
+  }
+
+  function updateTournamentSelectionCount() {
+    const format = getSelectedTournamentFormat();
+    const selectedCount = getSelectedTournamentTeamIds().length;
+    const count = document.getElementById("tournamentSelectionCount");
+
+    count.textContent = format
+      ? `${selectedCount} selected · ${format.teamCount} required`
+      : `${selectedCount} selected`;
+    count.classList.toggle("is-complete", Boolean(format && selectedCount === format.teamCount));
+  }
+
+  function createTournamentFromForm() {
+    if (isCreatingTournament) return;
+
+    const nameInput = document.getElementById("tournamentName");
+    const dateInput = document.getElementById("tournamentDate");
+    const submitButton = document.getElementById("createTournamentButton");
+    const feedback = document.getElementById("tournamentCreationFeedback");
+    const format = getSelectedTournamentFormat();
+    const teamIds = getSelectedTournamentTeamIds();
+    const name = nameInput.value.trim().replace(/\s+/g, " ");
+
+    if (!name || !dateInput.value || !format || teamIds.length !== format.teamCount) {
+      feedback.textContent = format
+        ? `Enter a name and date, then select exactly ${format.teamCount} teams.`
+        : "Select a tournament format.";
+      feedback.className = "tournament-creation-feedback is-error";
+      return;
+    }
+
+    isCreatingTournament = true;
+    submitButton.disabled = true;
+    submitButton.textContent = "Creating…";
+    feedback.textContent = "Creating the tournament…";
+    feedback.className = "tournament-creation-feedback";
+    showLoader();
+
+    google.script.run
+      .withSuccessHandler(tournament => {
+        isCreatingTournament = false;
+        submitButton.disabled = false;
+        submitButton.textContent = "Create tournament";
+        hideLoader();
+        addTournamentToMainSelector(tournament);
+        selectedTournamentTeamIds.clear();
+        renderTournamentTeamSelection();
+        feedback.textContent = `${tournament.name} was created. Next step: draw the groups.`;
+        feedback.className = "tournament-creation-feedback is-success";
+        document.dispatchEvent(new CustomEvent("tournaments:updated", { detail: tournament }));
+      })
+      .withFailureHandler(error => {
+        isCreatingTournament = false;
+        submitButton.disabled = false;
+        submitButton.textContent = "Create tournament";
+        hideLoader();
+        feedback.textContent = error.message || "Unable to create the tournament.";
+        feedback.className = "tournament-creation-feedback is-error";
+      })
+      .createTournament({
+        name,
+        date: dateInput.value,
+        formatId: format.id,
+        teamIds
+      });
+  }
+
+  function addTournamentToMainSelector(tournament) {
+    const selector = document.getElementById("tournamentSelect");
+    const existingOption = Array.from(selector.options)
+      .find(option => String(option.value) === String(tournament.id));
+
+    if (!existingOption) {
+      const option = document.createElement("option");
+      option.value = tournament.id;
+      option.textContent = tournament.name;
+      selector.appendChild(option);
+    }
+
+    selector.value = String(tournament.id);
+  }
+
+  document.addEventListener("teams:updated", () => {
+    if (document.getElementById("tournamentCreationTab").style.display !== "none") {
+      loadTournamentCreationData();
+    }
+  });
+
+</script>

@@ -31,6 +31,9 @@
     <button id="tab-teams" class="tab" onclick="showTab('teams')">
       👥 Teams
     </button>
+    <button id="tab-create-tournament" class="tab" onclick="showTab('create-tournament')">
+      ➕ Create tournament
+    </button>
   </div>
 
   <hr>
@@ -197,6 +200,47 @@
     </section>
   </div>
 
+  <div id="tournamentCreationTab" style="display:none;">
+    <section class="tournament-creation" aria-labelledby="tournamentCreationTitle">
+      <div class="tournament-creation-heading">
+        <div>
+          <p class="teams-eyebrow">Tournament registration</p>
+          <h2 id="tournamentCreationTitle">Create a tournament</h2>
+          <p>Choose a format, then select the participating teams.</p>
+        </div>
+        <span id="tournamentSelectionCount" class="tournament-selection-count">0 selected</span>
+      </div>
+
+      <form onsubmit="event.preventDefault(); createTournamentFromForm();">
+        <div class="tournament-creation-fields">
+          <label for="tournamentName">
+            <span>Tournament name</span>
+            <input id="tournamentName" type="text" autocomplete="off" placeholder="e.g. Autumn Cup" required>
+          </label>
+          <label for="tournamentDate">
+            <span>Date</span>
+            <input id="tournamentDate" type="date" required>
+          </label>
+          <label for="tournamentFormat">
+            <span>Format</span>
+            <select id="tournamentFormat" onchange="updateTournamentSelectionCount()"></select>
+          </label>
+        </div>
+
+        <div class="tournament-team-picker">
+          <div class="tournament-team-picker-heading">
+            <label for="tournamentTeamFilter">Participating teams</label>
+            <input id="tournamentTeamFilter" type="search" placeholder="Search a team" oninput="renderTournamentTeamSelection()">
+          </div>
+          <div id="tournamentTeamList" class="tournament-team-list"></div>
+        </div>
+
+        <p id="tournamentCreationFeedback" class="tournament-creation-feedback" role="status" aria-live="polite"></p>
+        <button id="createTournamentButton" class="create-tournament-button" type="submit">Create tournament</button>
+      </form>
+    </section>
+  </div>
+
   <?!= include('Main'); ?>
   <?!= include('Referees'); ?>
   <?!= include('Matches'); ?>
@@ -205,6 +249,7 @@
   <?!= include('Stats'); ?>
   <?!= include('AggregateStandings'); ?>
   <?!= include('Teams'); ?>
+  <?!= include('TournamentCreation'); ?>
 
   <div id="loader" class="loader-overlay" style="display:none;">
     <div class="spinner"></div>

@@ -4,7 +4,7 @@ function initializeSpreadsheet() {
 
   const sheetDefinitions = {
     "Tournaments": [
-      "id", "name", "date", "status", "groupLegs"
+      "id", "name", "date", "status"
     ],
     "Teams": [
       "id", "name"      
