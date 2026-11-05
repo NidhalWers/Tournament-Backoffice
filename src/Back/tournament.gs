@@ -26,6 +26,11 @@ function getTournamentGroupLegs(tournamentId) {
 }
 
 function getTournamentData(tournamentId) {
+  const tournament = getSheetData("Tournaments")
+    .find(entry => String(entry.id) === String(tournamentId));
+
+  if (!tournament) throw new Error("Tournament not found.");
+
   const matches = getSheetData("Matches")
     .filter(m => String(m.tournamentId) === String(tournamentId) && m.stage === "GROUP");
 
@@ -49,6 +54,12 @@ function getTournamentData(tournamentId) {
     .filter(team => String(team.tournamentId) === String(tournamentId));
   const groupLegs = getTournamentGroupLegs(tournamentId);
   const isComplete = isGroupStageComplete(matches, tournamentTeams, groupLegs);
+  const groupDraw = getTournamentGroupDrawData(
+    tournament,
+    tournamentTeams,
+    matches,
+    teamMap
+  );
   
   const knockoutMatches = getSheetData("Matches")
     .filter(m => String(m.tournamentId) === String(tournamentId) && m.stage !== "GROUP")
@@ -64,7 +75,15 @@ function getTournamentData(tournamentId) {
 
   const refereeData = getTournamentRefereeData(tournamentId, matches, teamMap);
 
-  var response = { matches, standings, isComplete, knockoutMatches, goals, ...refereeData };
+  var response = {
+    matches,
+    standings,
+    isComplete,
+    knockoutMatches,
+    goals,
+    groupDraw,
+    ...refereeData
+  };
   return response;
 
 }

@@ -586,6 +586,15 @@ configuration is derived from the selected participant count and is not stored i
 the spreadsheet. Six participating teams always use home-and-away fixtures. The
 status changes to `GROUP` after group matches are generated.
 
+While the status is `REGISTRATION` and no group match exists, participants can be
+replaced or resized to another supported participant count from the **Create
+tournament** tab. Any participant change clears the existing draw.
+
+The group draw uses two pots based on the all-time overall standings. The highest
+ranked half forms Pot 1 and the remaining teams form Pot 2. Teams are shuffled
+inside each pot and distributed evenly across groups. Unranked teams are placed
+after ranked teams when the pots are formed.
+
 ---
 
 ## `Teams`

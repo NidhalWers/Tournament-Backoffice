@@ -1284,6 +1284,62 @@
     box-shadow: 0 8px 24px rgba(35, 65, 42, 0.08);
   }
 
+  .tournament-creation-toggle {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .tournament-creation-toggle > summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 18px;
+    border: 1px solid #dbe5dc;
+    border-radius: 12px;
+    background: #fff;
+    color: #294e2f;
+    cursor: pointer;
+    list-style: none;
+    box-shadow: 0 5px 16px rgba(35, 65, 42, 0.06);
+  }
+
+  .tournament-creation-toggle > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .tournament-creation-toggle > summary span:first-child {
+    display: grid;
+    gap: 3px;
+  }
+
+  .tournament-creation-toggle > summary small {
+    color: #687568;
+    font-weight: 400;
+  }
+
+  .tournament-toggle-action {
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: #eaf4ec;
+    color: #28783a;
+    font-size: 0;
+    font-weight: 700;
+  }
+
+  .tournament-toggle-action::after {
+    content: "Open";
+    font-size: 0.78rem;
+  }
+
+  .tournament-creation-toggle[open] .tournament-toggle-action::after {
+    content: "Close";
+  }
+
+  .tournament-creation-toggle > .tournament-creation {
+    margin-top: 10px;
+  }
+
   .tournament-creation-heading {
     display: flex;
     justify-content: space-between;
@@ -1434,6 +1490,172 @@
   .create-tournament-button:disabled {
     cursor: wait;
     opacity: 0.7;
+  }
+
+  .group-draw-panel {
+    max-width: 960px;
+    margin: 0 auto 20px;
+    padding: 22px;
+    border: 1px solid #d8e5d9;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #f9fcf9, #eff7f0);
+  }
+
+  .group-draw-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .group-draw-heading h2,
+  .group-draw-heading p {
+    margin: 0;
+  }
+
+  .group-draw-heading h2 {
+    margin: 4px 0 6px;
+  }
+
+  .group-draw-heading p:not(.teams-eyebrow) {
+    color: #526153;
+  }
+
+  #drawGroupsButton {
+    min-height: 42px;
+    flex: 0 0 auto;
+    padding: 9px 16px;
+    border: 0;
+    border-radius: 8px;
+    background: #294e2f;
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  #drawGroupsButton:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .group-draw-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px;
+  }
+
+  .group-draw-card {
+    overflow: hidden;
+    border: 1px solid #d9e5da;
+    border-radius: 10px;
+    background: #fff;
+  }
+
+  .group-draw-card-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid #dfe9e0;
+    background: #f1f8f2;
+  }
+
+  .group-draw-card-heading h3 {
+    margin: 0;
+    color: #294e2f;
+    font-size: 0.95rem;
+  }
+
+  .group-draw-card-heading span {
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: #dbeedc;
+    color: #28783a;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .group-draw-team-list {
+    display: grid;
+    gap: 1px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .group-draw-team-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-bottom: 1px solid #edf2ed;
+    color: #304634;
+  }
+
+  .group-draw-team-list li:last-child {
+    border-bottom: 0;
+  }
+
+  .group-draw-team-list .group-draw-placeholder {
+    display: block;
+    color: #718073;
+    font-style: italic;
+  }
+
+  .group-draw-pot {
+    flex: 0 0 auto;
+    padding: 3px 7px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 800;
+  }
+
+  .group-draw-pot.pot-1 {
+    background: #fff0bf;
+    color: #765900;
+  }
+
+  .group-draw-pot.pot-2 {
+    background: #e7edf5;
+    color: #42526a;
+  }
+
+  .group-draw-pots-note {
+    margin: -8px 0 14px;
+    color: #687568;
+    font-size: 0.82rem;
+  }
+
+  .registration-manager {
+    margin-bottom: 20px;
+  }
+
+  .registration-picker-tools {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .registration-picker-tools input {
+    width: min(100%, 280px);
+  }
+
+  .registration-picker-tools select {
+    min-height: 38px;
+    padding: 7px 9px;
+    border: 1px solid #aabbaa;
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+  }
+
+  .tournament-team-option:has(input:disabled) {
+    cursor: default;
+    opacity: 0.72;
   }
 
   .tabs {
@@ -1607,7 +1829,30 @@
     }
 
     .tournament-team-picker-heading input,
-    .create-tournament-button {
+    .create-tournament-button,
+    #drawGroupsButton {
+      width: 100%;
+    }
+
+    .group-draw-panel {
+      padding: 18px;
+    }
+
+    .group-draw-heading {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .registration-picker-tools {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .registration-picker-tools input {
+      width: 100%;
+    }
+
+    .registration-picker-tools select {
       width: 100%;
     }
 

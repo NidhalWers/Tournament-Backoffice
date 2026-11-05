@@ -39,8 +39,8 @@
   <hr>
 
   <div id="groupsTab">
-    <div class="actions">
-      <button onclick="generateMatches()">Generate Group Matches</button>
+    <div id="generateMatchesAction" class="actions" hidden>
+      <button id="generateMatchesButton" onclick="generateMatches()" disabled>Generate Group Matches</button>
     </div>
 
     <section class="schedule-panel" aria-labelledby="scheduleTitle">
@@ -201,44 +201,95 @@
   </div>
 
   <div id="tournamentCreationTab" style="display:none;">
-    <section class="tournament-creation" aria-labelledby="tournamentCreationTitle">
+    <section id="tournamentRegistrationManager" class="tournament-creation registration-manager" aria-labelledby="registrationManagerTitle" hidden>
       <div class="tournament-creation-heading">
         <div>
-          <p class="teams-eyebrow">Tournament registration</p>
-          <h2 id="tournamentCreationTitle">Create a tournament</h2>
-          <p>Choose a format, then select the participating teams.</p>
+          <p class="teams-eyebrow">Selected tournament</p>
+          <h2 id="registrationManagerTitle">Manage participants</h2>
+          <p id="registrationManagerSummary"></p>
         </div>
-        <span id="tournamentSelectionCount" class="tournament-selection-count">0 selected</span>
+        <span id="registrationTournamentStatus" class="tournament-selection-count"></span>
       </div>
 
-      <form onsubmit="event.preventDefault(); createTournamentFromForm();">
-        <div class="tournament-creation-fields">
-          <label for="tournamentName">
-            <span>Tournament name</span>
-            <input id="tournamentName" type="text" autocomplete="off" placeholder="e.g. Autumn Cup" required>
-          </label>
-          <label for="tournamentDate">
-            <span>Date</span>
-            <input id="tournamentDate" type="date" required>
-          </label>
-          <label for="tournamentFormat">
-            <span>Format</span>
-            <select id="tournamentFormat" onchange="updateTournamentSelectionCount()"></select>
-          </label>
-        </div>
-
-        <div class="tournament-team-picker">
-          <div class="tournament-team-picker-heading">
-            <label for="tournamentTeamFilter">Participating teams</label>
-            <input id="tournamentTeamFilter" type="search" placeholder="Search a team" oninput="renderTournamentTeamSelection()">
+      <div class="tournament-team-picker">
+        <div class="tournament-team-picker-heading">
+          <label for="registrationTeamFilter">Participating teams</label>
+          <div class="registration-picker-tools">
+            <select id="registrationFormat" aria-label="Tournament format" onchange="updateRegistrationSelectionCount()"></select>
+            <span id="registrationSelectionCount" class="tournament-selection-count"></span>
+            <input id="registrationTeamFilter" type="search" placeholder="Search a team" oninput="renderRegistrationTeamSelection()">
           </div>
-          <div id="tournamentTeamList" class="tournament-team-list"></div>
+        </div>
+        <div id="registrationTeamList" class="tournament-team-list"></div>
+      </div>
+
+      <p id="registrationFeedback" class="tournament-creation-feedback" role="status" aria-live="polite"></p>
+      <button id="saveRegistrationTeamsButton" class="create-tournament-button" type="button" onclick="saveTournamentParticipants()">
+        Save participants
+      </button>
+    </section>
+
+    <section id="groupDrawPanel" class="group-draw-panel" aria-labelledby="groupDrawTitle" hidden>
+      <div class="group-draw-heading">
+        <div>
+          <p class="teams-eyebrow">Selected tournament</p>
+          <h2 id="groupDrawTitle">Group draw</h2>
+          <p id="groupDrawSummary" aria-live="polite"></p>
+        </div>
+        <button id="drawGroupsButton" type="button" onclick="drawGroups()">Draw groups</button>
+      </div>
+      <p class="group-draw-pots-note">Pot 1 contains the highest-ranked teams from the overall standings; Pot 2 contains the remaining teams.</p>
+      <div id="groupDrawGroups" class="group-draw-groups"></div>
+    </section>
+
+    <details id="newTournamentToggle" class="tournament-creation-toggle" open>
+      <summary>
+        <span>
+          <strong>Create a tournament</strong>
+          <small>Choose a format and its participating teams</small>
+        </span>
+        <span class="tournament-toggle-action">Open</span>
+      </summary>
+
+      <section class="tournament-creation" aria-labelledby="tournamentCreationTitle">
+        <div class="tournament-creation-heading">
+          <div>
+            <p class="teams-eyebrow">Tournament registration</p>
+            <h2 id="tournamentCreationTitle">Create a tournament</h2>
+            <p>Choose a format, then select the participating teams.</p>
+          </div>
+          <span id="tournamentSelectionCount" class="tournament-selection-count">0 selected</span>
         </div>
 
-        <p id="tournamentCreationFeedback" class="tournament-creation-feedback" role="status" aria-live="polite"></p>
-        <button id="createTournamentButton" class="create-tournament-button" type="submit">Create tournament</button>
-      </form>
-    </section>
+        <form onsubmit="event.preventDefault(); createTournamentFromForm();">
+          <div class="tournament-creation-fields">
+            <label for="tournamentName">
+              <span>Tournament name</span>
+              <input id="tournamentName" type="text" autocomplete="off" placeholder="e.g. Autumn Cup" required>
+            </label>
+            <label for="tournamentDate">
+              <span>Date</span>
+              <input id="tournamentDate" type="date" required>
+            </label>
+            <label for="tournamentFormat">
+              <span>Format</span>
+              <select id="tournamentFormat" onchange="updateTournamentSelectionCount()"></select>
+            </label>
+          </div>
+
+          <div class="tournament-team-picker">
+            <div class="tournament-team-picker-heading">
+              <label for="tournamentTeamFilter">Participating teams</label>
+              <input id="tournamentTeamFilter" type="search" placeholder="Search a team" oninput="renderTournamentTeamSelection()">
+            </div>
+            <div id="tournamentTeamList" class="tournament-team-list"></div>
+          </div>
+
+          <p id="tournamentCreationFeedback" class="tournament-creation-feedback" role="status" aria-live="polite"></p>
+          <button id="createTournamentButton" class="create-tournament-button" type="submit">Create tournament</button>
+        </form>
+      </section>
+    </details>
   </div>
 
   <?!= include('Main'); ?>
@@ -250,6 +301,7 @@
   <?!= include('AggregateStandings'); ?>
   <?!= include('Teams'); ?>
   <?!= include('TournamentCreation'); ?>
+  <?!= include('GroupDraw'); ?>
 
   <div id="loader" class="loader-overlay" style="display:none;">
     <div class="spinner"></div>

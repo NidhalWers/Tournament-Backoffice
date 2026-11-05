@@ -3,6 +3,9 @@
   let tournamentCreationData = null;
   let isCreatingTournament = false;
   let selectedTournamentTeamIds = new Set();
+  let tournamentRegistrationData = null;
+  let selectedRegistrationTeamIds = new Set();
+  let isSavingTournamentParticipants = false;
 
   function loadTournamentCreationData() {
     const teamList = document.getElementById("tournamentTeamList");
@@ -143,6 +146,7 @@
         renderTournamentTeamSelection();
         feedback.textContent = `${tournament.name} was created. Next step: draw the groups.`;
         feedback.className = "tournament-creation-feedback is-success";
+        loadTournamentRegistrationManagementData();
         document.dispatchEvent(new CustomEvent("tournaments:updated", { detail: tournament }));
       })
       .withFailureHandler(error => {
@@ -176,9 +180,169 @@
     selector.value = String(tournament.id);
   }
 
+  function loadTournamentRegistrationManagementData() {
+    const tournamentId = document.getElementById("tournamentSelect").value;
+    const manager = document.getElementById("tournamentRegistrationManager");
+
+    if (!tournamentId) {
+      manager.hidden = true;
+      document.getElementById("groupDrawPanel").hidden = true;
+      document.getElementById("newTournamentToggle").open = true;
+      return;
+    }
+
+    google.script.run
+      .withSuccessHandler(renderTournamentRegistrationManagementData)
+      .withFailureHandler(error => {
+        manager.hidden = false;
+        document.getElementById("registrationManagerSummary").textContent = error.message;
+        console.error(error);
+      })
+      .getTournamentRegistrationManagementData(tournamentId);
+  }
+
+  function renderTournamentRegistrationManagementData(data) {
+    tournamentRegistrationData = data;
+    selectedRegistrationTeamIds = new Set(data.participantTeamIds.map(String));
+
+    const manager = document.getElementById("tournamentRegistrationManager");
+    const title = document.getElementById("registrationManagerTitle");
+    const summary = document.getElementById("registrationManagerSummary");
+    const status = document.getElementById("registrationTournamentStatus");
+    const saveButton = document.getElementById("saveRegistrationTeamsButton");
+    const formatSelect = document.getElementById("registrationFormat");
+
+    manager.hidden = false;
+    title.textContent = `Manage ${data.tournament.name}`;
+    status.textContent = data.tournament.status;
+    document.getElementById("newTournamentToggle").open =
+      String(data.tournament.status).toUpperCase() !== "REGISTRATION";
+    summary.textContent = data.canEdit
+      ? "You can replace participating teams until group matches are generated. Saving a change clears the current draw."
+      : data.lockedReason;
+    saveButton.hidden = !data.canEdit;
+    document.getElementById("registrationTeamFilter").disabled = !data.canEdit;
+    formatSelect.disabled = !data.canEdit;
+    formatSelect.innerHTML = "";
+    data.formats.forEach(format => {
+      const option = document.createElement("option");
+      option.value = format.id;
+      option.textContent = format.label;
+      option.selected = format.teamCount === data.expectedTeamCount;
+      formatSelect.appendChild(option);
+    });
+
+    renderRegistrationTeamSelection();
+    renderGroupDraw(data.groupDraw);
+  }
+
+  function renderRegistrationTeamSelection() {
+    if (!tournamentRegistrationData) return;
+
+    const list = document.getElementById("registrationTeamList");
+    const filter = document.getElementById("registrationTeamFilter").value.toLocaleLowerCase("fr-FR");
+    const matchingTeams = tournamentRegistrationData.teams.filter(team =>
+      team.name.toLocaleLowerCase("fr-FR").includes(filter)
+    );
+
+    list.innerHTML = "";
+
+    if (matchingTeams.length === 0) {
+      const emptyState = document.createElement("p");
+      emptyState.className = "tournament-team-empty";
+      emptyState.textContent = "No team matches this search.";
+      list.appendChild(emptyState);
+    } else {
+      matchingTeams.forEach(team => {
+        const label = document.createElement("label");
+        label.className = "tournament-team-option";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.value = team.id;
+        checkbox.checked = selectedRegistrationTeamIds.has(String(team.id));
+        checkbox.disabled = !tournamentRegistrationData.canEdit;
+        checkbox.onchange = () => {
+          if (checkbox.checked) {
+            selectedRegistrationTeamIds.add(String(team.id));
+          } else {
+            selectedRegistrationTeamIds.delete(String(team.id));
+          }
+
+          updateRegistrationSelectionCount();
+        };
+
+        const name = document.createElement("span");
+        name.textContent = team.name;
+        label.appendChild(checkbox);
+        label.appendChild(name);
+        list.appendChild(label);
+      });
+    }
+
+    updateRegistrationSelectionCount();
+  }
+
+  function updateRegistrationSelectionCount() {
+    if (!tournamentRegistrationData) return;
+
+    const selectedCount = selectedRegistrationTeamIds.size;
+    const formatId = document.getElementById("registrationFormat").value;
+    const format = tournamentRegistrationData.formats.find(entry => entry.id === formatId);
+    const expectedCount = format ? format.teamCount : tournamentRegistrationData.expectedTeamCount;
+    const count = document.getElementById("registrationSelectionCount");
+    count.textContent = `${selectedCount} selected · ${expectedCount} required`;
+    count.classList.toggle("is-complete", selectedCount === expectedCount);
+  }
+
+  function saveTournamentParticipants() {
+    if (isSavingTournamentParticipants || !tournamentRegistrationData) return;
+
+    const feedback = document.getElementById("registrationFeedback");
+    const button = document.getElementById("saveRegistrationTeamsButton");
+    const teamIds = Array.from(selectedRegistrationTeamIds);
+    const formatId = document.getElementById("registrationFormat").value;
+    const format = tournamentRegistrationData.formats.find(entry => entry.id === formatId);
+    const expectedTeamCount = format ? format.teamCount : tournamentRegistrationData.expectedTeamCount;
+
+    if (teamIds.length !== expectedTeamCount) {
+      feedback.textContent = `Select exactly ${expectedTeamCount} teams.`;
+      feedback.className = "tournament-creation-feedback is-error";
+      return;
+    }
+
+    isSavingTournamentParticipants = true;
+    button.disabled = true;
+    button.textContent = "Saving…";
+    feedback.textContent = "Saving participants…";
+    feedback.className = "tournament-creation-feedback";
+    showLoader();
+
+    google.script.run
+      .withSuccessHandler(() => {
+        isSavingTournamentParticipants = false;
+        button.disabled = false;
+        button.textContent = "Save participants";
+        hideLoader();
+        feedback.textContent = "Participants were updated. Draw the groups again if the selection changed.";
+        feedback.className = "tournament-creation-feedback is-success";
+        loadTournamentRegistrationManagementData();
+      })
+      .withFailureHandler(error => {
+        isSavingTournamentParticipants = false;
+        button.disabled = false;
+        button.textContent = "Save participants";
+        hideLoader();
+        feedback.textContent = error.message || "Unable to update participants.";
+        feedback.className = "tournament-creation-feedback is-error";
+      })
+      .updateTournamentTeams(tournamentRegistrationData.tournament.id, teamIds);
+  }
+
   document.addEventListener("teams:updated", () => {
     if (document.getElementById("tournamentCreationTab").style.display !== "none") {
       loadTournamentCreationData();
+      loadTournamentRegistrationManagementData();
     }
   });
 

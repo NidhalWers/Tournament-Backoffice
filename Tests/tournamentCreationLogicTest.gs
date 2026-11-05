@@ -160,6 +160,80 @@ function testTournamentCreationLogic() {
         // Assert
         assertThrows(validateUndrawnGroups, "Draw complete groups");
       }
+    },
+    {
+      name: "With_ChangedRegistrationTeams_Should_PreserveRowsAndClearDraw",
+      test: function() {
+        // Arrange
+        const existingTeams = createRegistrationTeams(6).map((team, index) => ({
+          ...team,
+          tournamentId: "1",
+          group: index < 3 ? "A" : "B"
+        }));
+        const availableTeams = createAvailableTeams(7);
+
+        // Act
+        const result = buildUpdatedTournamentTeams(
+          existingTeams,
+          ["1", "2", "3", "4", "5", "7"],
+          availableTeams,
+          () => "new-entry"
+        );
+
+        // Assert
+        assertDeepEquals(
+          existingTeams.slice(0, 5).map(team => team.id).concat(["new-entry"]),
+          result.map(team => team.id)
+        );
+        assertDeepEquals(["1", "2", "3", "4", "5", "7"], result.map(team => team.teamId));
+        assertTrue(result.every(team => team.group === ""));
+      }
+    },
+    {
+      name: "With_UnchangedRegistrationTeams_Should_PreserveExistingDraw",
+      test: function() {
+        // Arrange
+        const existingTeams = createRegistrationTeams(6).map((team, index) => ({
+          ...team,
+          tournamentId: "1",
+          group: index < 3 ? "A" : "B"
+        }));
+
+        // Act
+        const result = buildUpdatedTournamentTeams(
+          existingTeams,
+          ["6", "5", "4", "3", "2", "1"],
+          createAvailableTeams(6)
+        );
+
+        // Assert
+        assertDeepEquals(existingTeams, result);
+      }
+    },
+    {
+      name: "With_DifferentSupportedParticipantCount_Should_ResizeRegistration",
+      test: function() {
+        // Arrange
+        const existingTeams = createRegistrationTeams(6)
+          .map(team => ({ ...team, tournamentId: "1" }));
+        let nextId = 7;
+
+        // Act
+        const result = buildUpdatedTournamentTeams(
+          existingTeams,
+          ["1", "2", "3", "4", "5", "6", "7", "8"],
+          createAvailableTeams(8),
+          () => `entry-${nextId++}`
+        );
+
+        // Assert
+        assertEquals(8, result.length);
+        assertDeepEquals(
+          ["entry-1", "entry-2", "entry-3", "entry-4", "entry-5", "entry-6", "entry-7", "entry-8"],
+          result.map(team => team.id)
+        );
+        assertTrue(result.every(team => team.group === ""));
+      }
     }
   ]);
 }
@@ -177,5 +251,13 @@ function createAvailableTeams(teamCount) {
   return Array.from({ length: teamCount }, (_, index) => ({
     id: index + 1,
     name: `Team ${index + 1}`
+  }));
+}
+
+function createRegistrationTeams(teamCount) {
+  return Array.from({ length: teamCount }, (_, index) => ({
+    id: `entry-${index + 1}`,
+    teamId: String(index + 1),
+    group: ""
   }));
 }

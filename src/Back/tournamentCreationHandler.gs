@@ -5,6 +5,142 @@ function getTournamentCreationData() {
   };
 }
 
+function getTournamentRegistrationManagementData(tournamentId) {
+  const tournament = getSheetData("Tournaments")
+    .find(entry => String(entry.id) === String(tournamentId));
+
+  if (!tournament) throw new Error("Tournament not found.");
+
+  const teams = getTeams();
+  const teamMap = {};
+  teams.forEach(team => teamMap[String(team.id)] = team.name);
+  const tournamentTeams = getSheetData("TournamentTeams")
+    .filter(team => String(team.tournamentId) === String(tournamentId));
+  const groupMatches = getSheetData("Matches")
+    .filter(match => String(match.tournamentId) === String(tournamentId) && match.stage === "GROUP");
+  const availability = getGroupDrawAvailability(tournament, groupMatches);
+
+  return {
+    tournament: {
+      id: String(tournament.id),
+      name: String(tournament.name),
+      status: String(tournament.status)
+    },
+    teams,
+    formats: getTournamentCreationFormats(),
+    participantTeamIds: tournamentTeams.map(team => String(team.teamId)),
+    expectedTeamCount: tournamentTeams.length,
+    canEdit: availability.canDraw,
+    lockedReason: availability.reason,
+    groupDraw: getTournamentGroupDrawData(tournament, tournamentTeams, groupMatches, teamMap)
+  };
+}
+
+function updateTournamentTeams(tournamentId, selectedTeamIds) {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const tournamentTeamsSheet = spreadsheet.getSheetByName("TournamentTeams");
+
+  if (!tournamentTeamsSheet) {
+    throw new Error("The TournamentTeams sheet is missing. Run the spreadsheet initializer.");
+  }
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+
+  try {
+    const tournament = getSheetData("Tournaments")
+      .find(entry => String(entry.id) === String(tournamentId));
+
+    if (!tournament) throw new Error("Tournament not found.");
+
+    const groupMatches = getSheetData("Matches")
+      .filter(match => String(match.tournamentId) === String(tournamentId) && match.stage === "GROUP");
+    const availability = getGroupDrawAvailability(tournament, groupMatches);
+    if (!availability.canDraw) throw new Error(availability.reason);
+
+    const existingTournamentTeams = getSheetData("TournamentTeams")
+      .filter(team => String(team.tournamentId) === String(tournamentId));
+    const updatedTournamentTeams = buildUpdatedTournamentTeams(
+      existingTournamentTeams,
+      selectedTeamIds,
+      getSheetData("Teams"),
+      () => Utilities.getUuid()
+    );
+
+    saveUpdatedTournamentTeams(tournamentTeamsSheet, tournamentId, updatedTournamentTeams);
+
+    return updatedTournamentTeams;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function buildUpdatedTournamentTeams(existingTournamentTeams, selectedTeamIds, availableTeams, createTournamentTeamId = () => Utilities.getUuid()) {
+  const normalizedTeamIds = Array.isArray(selectedTeamIds)
+    ? selectedTeamIds.map(teamId => String(teamId))
+    : [];
+  getTournamentGroupConfiguration(normalizedTeamIds.length);
+  if (new Set(normalizedTeamIds).size !== normalizedTeamIds.length) {
+    throw new Error("A team can only be selected once.");
+  }
+
+  const availableTeamIds = new Set(availableTeams.map(team => String(team.id)));
+  if (normalizedTeamIds.some(teamId => !availableTeamIds.has(teamId))) {
+    throw new Error("One or more selected teams no longer exist.");
+  }
+
+  const existingTeamIds = existingTournamentTeams.map(team => String(team.teamId));
+  const selectionChanged = normalizedTeamIds.length !== existingTeamIds.length ||
+    normalizedTeamIds.some(teamId => !existingTeamIds.includes(teamId));
+
+  if (!selectionChanged) return existingTournamentTeams.map(team => ({ ...team }));
+
+  const existingTeamByTeamId = {};
+  existingTournamentTeams.forEach(team => existingTeamByTeamId[String(team.teamId)] = team);
+  const tournamentId = existingTournamentTeams.length > 0
+    ? existingTournamentTeams[0].tournamentId
+    : "";
+
+  return normalizedTeamIds.map(teamId => {
+    const existingTeam = existingTeamByTeamId[teamId];
+
+    return existingTeam
+      ? { ...existingTeam, group: "" }
+      : {
+          id: createTournamentTeamId(),
+          tournamentId,
+          teamId,
+          group: ""
+        };
+  });
+}
+
+function saveUpdatedTournamentTeams(sheet, tournamentId, updatedTournamentTeams) {
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const idColumn = headers.indexOf("id");
+  const tournamentIdColumn = headers.indexOf("tournamentId");
+  const teamIdColumn = headers.indexOf("teamId");
+  const groupColumn = headers.indexOf("group");
+
+  if ([idColumn, tournamentIdColumn, teamIdColumn, groupColumn].some(column => column === -1)) {
+    throw new Error("The TournamentTeams sheet is missing required columns.");
+  }
+
+  const unrelatedRows = data.slice(1)
+    .filter(row => String(row[tournamentIdColumn]) !== String(tournamentId));
+  const updatedRows = updatedTournamentTeams.map(team => headers.map(header =>
+    Object.prototype.hasOwnProperty.call(team, header) ? team[header] : ""
+  ));
+  const values = unrelatedRows.concat(updatedRows);
+  const rowCount = Math.max(data.length - 1, values.length);
+  const paddedValues = Array.from({ length: rowCount }, (_, index) =>
+    values[index] || headers.map(() => "")
+  );
+
+  sheet.getRange(2, 1, rowCount, headers.length).setValues(paddedValues);
+}
+
 function getTournamentCreationFormats() {
   return [
     { id: "3x5", label: "3 groups of 5 teams", teamCount: 15, groupCount: 3, groupSize: 5, groupLegs: 1 },

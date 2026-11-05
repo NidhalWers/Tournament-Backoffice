@@ -29,6 +29,7 @@
   function loadTournament() {
     const tournamentId = document.getElementById("tournamentSelect").value;
 
+    document.getElementById("generateMatchesAction").hidden = true;
     showLoader();
 
     google.script.run
@@ -57,6 +58,7 @@
         renderMatches(res.matches);
         renderStandings(res.standings);
         renderBracket(res.knockoutMatches);
+        renderGroupDraw(res.groupDraw);
 
         const btn = document.getElementById("btnQuarters");
 
@@ -135,6 +137,7 @@
       document.getElementById("tournamentCreationTab").style.display = "block";
       document.getElementById("tab-create-tournament").classList.add("active");
       loadTournamentCreationData();
+      loadTournamentRegistrationManagementData();
     }
   }
 

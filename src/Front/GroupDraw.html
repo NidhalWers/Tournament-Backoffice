@@ -1,0 +1,97 @@
+<script>
+
+  function renderGroupDraw(groupDraw) {
+    const panel = document.getElementById("groupDrawPanel");
+    const summary = document.getElementById("groupDrawSummary");
+    const button = document.getElementById("drawGroupsButton");
+    const groups = document.getElementById("groupDrawGroups");
+    const generateButton = document.getElementById("generateMatchesButton");
+    const generateAction = document.getElementById("generateMatchesAction");
+
+    if (!groupDraw) {
+      panel.hidden = true;
+      return;
+    }
+
+    panel.hidden = false;
+    summary.textContent = groupDraw.canDraw
+      ? groupDraw.isComplete
+        ? "Groups are ready. You can redraw them before generating matches."
+        : `Draw ${groupDraw.groupCount} groups of ${groupDraw.groupSize} teams.`
+      : groupDraw.lockedReason;
+    button.hidden = !groupDraw.canDraw;
+    button.disabled = false;
+    button.textContent = groupDraw.isComplete ? "Redraw groups" : "Draw groups";
+    generateAction.hidden = !groupDraw.canDraw;
+    generateButton.disabled = !groupDraw.isComplete;
+    generateButton.title = generateButton.disabled
+      ? "Draw complete groups before generating matches."
+      : "";
+
+    groups.innerHTML = "";
+    groupDraw.groups.forEach(group => {
+      const card = document.createElement("article");
+      card.className = "group-draw-card";
+
+      const heading = document.createElement("div");
+      heading.className = "group-draw-card-heading";
+      const title = document.createElement("h3");
+      title.textContent = `Group ${group.name}`;
+      const count = document.createElement("span");
+      count.textContent = `${group.teams.length}/${groupDraw.groupSize}`;
+      heading.appendChild(title);
+      heading.appendChild(count);
+
+      const teamList = document.createElement("ol");
+      teamList.className = "group-draw-team-list";
+
+      if (group.teams.length === 0) {
+        const placeholder = document.createElement("li");
+        placeholder.className = "group-draw-placeholder";
+        placeholder.textContent = "Waiting for draw";
+        teamList.appendChild(placeholder);
+      } else {
+        group.teams.forEach(team => {
+          const item = document.createElement("li");
+          const name = document.createElement("span");
+          name.textContent = team.name;
+          const pot = document.createElement("small");
+          pot.className = `group-draw-pot pot-${team.pot}`;
+          pot.textContent = `Pot ${team.pot}`;
+          item.appendChild(name);
+          item.appendChild(pot);
+          teamList.appendChild(item);
+        });
+      }
+
+      card.appendChild(heading);
+      card.appendChild(teamList);
+      groups.appendChild(card);
+    });
+  }
+
+  function drawGroups() {
+    const tournamentId = document.getElementById("tournamentSelect").value;
+    const button = document.getElementById("drawGroupsButton");
+    const isRedraw = button.textContent === "Redraw groups";
+
+    if (isRedraw && !confirm("Replace the current group draw?")) return;
+
+    button.disabled = true;
+    button.textContent = "Drawing…";
+    showLoader();
+
+    google.script.run
+      .withSuccessHandler(() => {
+        hideLoader();
+        loadTournamentRegistrationManagementData();
+      })
+      .withFailureHandler(error => {
+        hideLoader();
+        button.disabled = false;
+        alert(error.message);
+      })
+      .drawTournamentGroups(tournamentId);
+  }
+
+</script>
