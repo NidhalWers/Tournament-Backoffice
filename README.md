@@ -165,12 +165,13 @@ Standings are recalculated whenever tournament data is loaded.
 
 # 🏟️ Tournament Formats
 
-The application dynamically detects the tournament format based on:
+The application dynamically detects the group structure and reads the number of legs from the tournament configuration:
 
 ```javascript
 {
   groupCount,
-  groupSize
+  groupSize,
+  groupLegs
 }
 ```
 
@@ -178,13 +179,14 @@ The number of qualified teams determines the knockout structure.
 
 Currently supported formats include:
 
-| Groups | Teams per group | Qualification | Knockout stage |
+| Groups | Teams per group | Group legs | Qualification | Knockout stage |
 |---|---:|---|---|
-| 3 | 5 | Top 2 + 2 best third-placed teams | QF → SF → Final |
-| 3 | 4 | Top 2 + 2 best third-placed teams | QF → SF → Final |
-| 2 | 5 | Top 4 from each group | QF → SF → Final |
-| 2 | 4 | Top 2 from each group | SF → Final |
-| 2 | 3 | Top 2 from each group | SF → Final |
+| 3 | 5 | 1 | Top 2 + 2 best third-placed teams | QF → SF → Final |
+| 3 | 4 | 1 | Top 2 + 2 best third-placed teams | QF → SF → Final |
+| 2 | 5 | 1 | Top 4 from each group | QF → SF → Final |
+| 2 | 4 | 1 | Top 2 from each group | SF → Final |
+| 2 | 3 | 1 | Top 2 from each group | SF → Final |
+| 2 | 3 | 2 | Top 2 from each group | SF → Final (home and away) |
 
 This allows the same application to support tournaments with different numbers of participating teams.
 
@@ -377,10 +379,13 @@ Group standings use the following criteria:
 
 1. Points
 2. Goal difference
-3. Goals scored
-4. Fair Play score
+3. Head-to-head points between tied teams from the same group
+4. Goals scored
+5. Fair Play score
 
-The same criteria are used to compare third-placed teams from different groups. If those criteria are all identical, the application performs a random draw.
+When more than two teams have the same points and goal difference, head-to-head points are calculated as a mini-table between those teams.
+
+Third-placed teams from different groups are compared by points, goal difference, goals scored, and Fair Play score. If those criteria are all identical, the application performs a random draw.
 
 The quarter-final draw uses points, goal difference, and goals scored to split qualified teams into a top half and a bottom half. The bottom half is then shuffled, and the draw avoids same-group pairings whenever possible.
 
@@ -576,7 +581,13 @@ id
 name
 date
 status
+groupLegs
 ```
+
+`groupLegs` controls the number of group-stage meetings between each pair of teams:
+
+- `1` (or an empty value) for a single round-robin;
+- `2` for home-and-away fixtures.
 
 ---
 
@@ -689,6 +700,36 @@ seriousRedCard
 solidarityPoints
 ```
 
+---
+
+## `Referees`
+
+Stores the players made available as referees by tournament teams.
+
+Columns:
+
+```text
+id
+tournamentId
+teamId
+playerName
+```
+
+---
+
+## `MatchReferees`
+
+Stores referee assignments for group-stage matches.
+
+Columns:
+
+```text
+id
+tournamentId
+matchId
+refereeId
+```
+
 Fair Play scores are aggregated by team and used as a tie-breaking criterion.
 
 ---
@@ -751,6 +792,8 @@ This creates the required sheets and headers when they do not already exist.
 ## 5. Add tournament data
 
 Create a tournament in the `Tournaments` sheet.
+
+Set `groupLegs` to `2` for a tournament with two groups of three teams playing home and away. Leave it empty or set it to `1` for the existing single round-robin behavior.
 
 Then add teams to `Teams`.
 

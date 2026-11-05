@@ -4,7 +4,7 @@ function initializeSpreadsheet() {
 
   const sheetDefinitions = {
     "Tournaments": [
-      "id", "name", "date", "status"      
+      "id", "name", "date", "status", "groupLegs"
     ],
     "Teams": [
       "id", "name"      
@@ -21,9 +21,16 @@ function initializeSpreadsheet() {
     "FairPlay": [
       "id", "tournamentId",	"matchId", "teamId", "redCard",	"seriousRedCard","solidarityPoints"																			 
     ],
+    "Referees": [
+      "id", "tournamentId", "teamId", "playerName"
+    ],
+    "MatchReferees": [
+      "id", "tournamentId", "matchId", "refereeId"
+    ],
   };
 
   let createdSheetCount = 0;
+  let addedHeaderCount = 0;
 
   for (const [sheetName, headers] of Object.entries(sheetDefinitions)) {
 
@@ -51,10 +58,21 @@ function initializeSpreadsheet() {
         .setValues([headers]);
 
       customSheetInitialization(sheet, sheetName);
+    } else {
+      const existingHeaders = sheet
+        .getRange(1, 1, 1, lastColumn)
+        .getValues()[0];
+
+      headers.forEach(header => {
+        if (existingHeaders.indexOf(header) === -1) {
+          sheet.getRange(1, sheet.getLastColumn() + 1).setValue(header);
+          addedHeaderCount++;
+        }
+      });
     }
   }
 
-  if (createdSheetCount === 0) {
+  if (createdSheetCount === 0 && addedHeaderCount === 0) {
     throw new Error(
       "All required sheets already exist."
     );

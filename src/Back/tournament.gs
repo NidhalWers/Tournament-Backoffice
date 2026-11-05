@@ -6,8 +6,31 @@ function getTournaments() {
     id: String(t.id),
     name: String(t.name),
     status: String(t.status),
+    groupLegs: getTournamentGroupLegsFromRow(t),
     date: t.date ? new Date(t.date).toISOString() : null
   }));
+}
+
+function getTournamentGroupLegs(tournamentId) {
+  const tournament = getSheetData("Tournaments")
+    .find(currentTournament => String(currentTournament.id) === String(tournamentId));
+
+  if (!tournament) {
+    throw new Error("Tournament not found");
+  }
+
+  return getTournamentGroupLegsFromRow(tournament);
+}
+
+function getTournamentGroupLegsFromRow(tournament) {
+  if (tournament.groupLegs === "" || tournament.groupLegs == null) return 1;
+
+  const groupLegs = Number(tournament.groupLegs);
+  if (groupLegs !== 1 && groupLegs !== 2) {
+    throw new Error("Invalid group-stage legs configuration");
+  }
+
+  return groupLegs;
 }
 
 function getTournamentData(tournamentId) {
@@ -30,7 +53,10 @@ function getTournamentData(tournamentId) {
 
   const standings = computeStandings(matches, teamMap, fairPlay);
 
-  const isComplete = isGroupStageComplete(matches);
+  const tournamentTeams = getSheetData("TournamentTeams")
+    .filter(team => String(team.tournamentId) === String(tournamentId));
+  const groupLegs = getTournamentGroupLegs(tournamentId);
+  const isComplete = isGroupStageComplete(matches, tournamentTeams, groupLegs);
   
   const knockoutMatches = getSheetData("Matches")
     .filter(m => String(m.tournamentId) === String(tournamentId) && m.stage !== "GROUP")
@@ -44,7 +70,9 @@ function getTournamentData(tournamentId) {
   .filter(g => matches.some(m => m.id === g.matchId)
             || knockoutMatches.some(m => m.id === g.matchId));
 
-  var response = { matches, standings, isComplete, knockoutMatches, goals };
+  const refereeData = getTournamentRefereeData(tournamentId, matches, teamMap);
+
+  var response = { matches, standings, isComplete, knockoutMatches, goals, ...refereeData };
   return response;
 
 }
@@ -61,8 +89,94 @@ function hasMatches(tournamentId) {
     .some(m => m.tournamentId === tournamentId && m.stage === "GROUP");
 }
 
-function isGroupStageComplete(matches) {
-  return matches.every(m => m.played === true);
+function isGroupStageComplete(matches, tournamentTeams, groupLegs) {
+  if (!Array.isArray(matches) || matches.length === 0 || !Array.isArray(tournamentTeams)) {
+    return false;
+  }
+
+  const teamIdsByGroup = {};
+
+  tournamentTeams.forEach(tournamentTeam => {
+    if (!tournamentTeam.group || !tournamentTeam.teamId) return;
+
+    const group = String(tournamentTeam.group);
+    if (!teamIdsByGroup[group]) teamIdsByGroup[group] = [];
+    teamIdsByGroup[group].push(String(tournamentTeam.teamId));
+  });
+
+  const groups = Object.keys(teamIdsByGroup);
+  if (groups.length === 0) return false;
+  if (groupLegs === 2 &&
+      (groups.length !== 2 || groups.some(group => teamIdsByGroup[group].length !== 3))) {
+    return false;
+  }
+  if (matches.some(match => !teamIdsByGroup[String(match.group)])) return false;
+
+  return groups.every(group => isGroupComplete(
+    matches.filter(match => String(match.group) === group),
+    teamIdsByGroup[group],
+    groupLegs
+  ));
+}
+
+function isGroupComplete(matches, teamIds, groupLegs) {
+  const legs = groupLegs || 1;
+  const uniqueTeamIds = [...new Set(teamIds)];
+  if (uniqueTeamIds.length < 2 || uniqueTeamIds.length !== teamIds.length) return false;
+
+  const teamIdsSet = new Set(uniqueTeamIds);
+  const expectedPairCount = uniqueTeamIds.length * (uniqueTeamIds.length - 1) / 2;
+  const expectedMatchCount = expectedPairCount * legs;
+  const matchCountByTeam = {};
+  const pairKeys = new Set();
+  const directedPairKeys = new Set();
+
+  uniqueTeamIds.forEach(teamId => matchCountByTeam[teamId] = 0);
+
+  if (matches.length !== expectedMatchCount) return false;
+
+  for (let i = 0; i < matches.length; i++) {
+    const match = matches[i];
+    const teamA = String(match.teamA);
+    const teamB = String(match.teamB);
+
+    if (!teamIdsSet.has(teamA) || !teamIdsSet.has(teamB) || teamA === teamB ||
+        !isPlayedMatchWithValidScores(match)) {
+      return false;
+    }
+
+    const pairKey = [teamA, teamB].sort().join("|");
+    const directedPairKey = `${teamA}|${teamB}`;
+    if (legs === 1 && pairKeys.has(pairKey)) return false;
+    if (legs === 2 && directedPairKeys.has(directedPairKey)) return false;
+
+    pairKeys.add(pairKey);
+    directedPairKeys.add(directedPairKey);
+    matchCountByTeam[teamA]++;
+    matchCountByTeam[teamB]++;
+  }
+
+  if (!uniqueTeamIds.every(teamId => matchCountByTeam[teamId] === (uniqueTeamIds.length - 1) * legs)) {
+    return false;
+  }
+
+  if (legs === 2 && pairKeys.size !== expectedPairCount) return false;
+
+  return true;
+}
+
+function isPlayedMatchWithValidScores(match) {
+  return match.played === true &&
+    isValidScoreValue(match.scoreA) &&
+    isValidScoreValue(match.scoreB);
+}
+
+function isValidScoreValue(value) {
+  if (typeof value === "string" && value.trim() === "") return false;
+  if (typeof value !== "string" && typeof value !== "number") return false;
+
+  const score = Number(value);
+  return Number.isInteger(score) && score >= 0;
 }
 
 function computeStandings(matches, teamMap, fairPlay) {
@@ -111,9 +225,9 @@ function computeStandings(matches, teamMap, fairPlay) {
       }
     });
 
-    if (m.played && m.scoreA !== "" && m.scoreB !== "") {
-      const a = parseInt(m.scoreA);
-      const b = parseInt(m.scoreB);
+    if (isPlayedMatchWithValidScores(m)) {
+      const a = Number(m.scoreA);
+      const b = Number(m.scoreB);
 
       g[teamAName].played++;
       g[teamBName].played++;
@@ -142,17 +256,75 @@ function computeStandings(matches, teamMap, fairPlay) {
   });
 
   Object.keys(groups).forEach(group => {
-    groups[group] = Object.values(groups[group]).sort((a, b) => {
-      return (
-        b.pts - a.pts ||
-        (b.gf - b.ga) - (a.gf - a.ga) ||
-        b.gf - a.gf ||
-        b.fairPlayScore - a.fairPlayScore
-      );
-    });
+    const groupStandings = Object.values(groups[group]);
+    const groupMatches = matches.filter(match => String(match.group) === String(group));
+
+    groups[group] = sortGroupStandings(groupStandings, groupMatches);
   });
 
   return groups;
+}
+
+function sortGroupStandings(groupStandings, groupMatches) {
+  const headToHeadPoints = getHeadToHeadPointsByTeam(groupStandings, groupMatches);
+
+  return [...groupStandings].sort((a, b) => {
+    return (
+      b.pts - a.pts ||
+      (b.gf - b.ga) - (a.gf - a.ga) ||
+      (headToHeadPoints[String(b.teamId)] || 0) -
+        (headToHeadPoints[String(a.teamId)] || 0) ||
+      b.gf - a.gf ||
+      b.fairPlayScore - a.fairPlayScore
+    );
+  });
+}
+
+function getHeadToHeadPointsByTeam(groupStandings, groupMatches) {
+  const tieKeyByTeam = {};
+  const teamsByTieKey = {};
+  const headToHeadPoints = {};
+
+  groupStandings.forEach(team => {
+    const teamId = String(team.teamId);
+    const tieKey = JSON.stringify([team.pts, team.gf - team.ga]);
+
+    tieKeyByTeam[teamId] = tieKey;
+    if (!teamsByTieKey[tieKey]) teamsByTieKey[tieKey] = [];
+    teamsByTieKey[tieKey].push(teamId);
+  });
+
+  Object.values(teamsByTieKey).forEach(teamIds => {
+    if (teamIds.length < 2) return;
+
+    teamIds.forEach(teamId => headToHeadPoints[teamId] = 0);
+  });
+
+  groupMatches.forEach(match => {
+    if (!isPlayedMatchWithValidScores(match)) return;
+
+    const teamAId = String(match.teamA);
+    const teamBId = String(match.teamB);
+    const tieKey = tieKeyByTeam[teamAId];
+
+    if (!tieKey || tieKey !== tieKeyByTeam[teamBId] || teamsByTieKey[tieKey].length < 2) {
+      return;
+    }
+
+    const scoreA = Number(match.scoreA);
+    const scoreB = Number(match.scoreB);
+
+    if (scoreA > scoreB) {
+      headToHeadPoints[teamAId] += 3;
+    } else if (scoreB > scoreA) {
+      headToHeadPoints[teamBId] += 3;
+    } else {
+      headToHeadPoints[teamAId] += 1;
+      headToHeadPoints[teamBId] += 1;
+    }
+  });
+
+  return headToHeadPoints;
 }
 
 function getQualifiedTeams(standings) {

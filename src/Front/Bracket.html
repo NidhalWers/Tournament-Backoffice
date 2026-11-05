@@ -2,34 +2,121 @@
 
   function renderBracket(matches) {
     const container = document.getElementById("bracket");
-    container.innerHTML = "";
+    const quarterFinals = matches.filter(match => match.stage === "QF");
+    const semiFinals = matches.filter(match => match.stage === "SF");
+    const finals = matches.filter(match => match.stage === "FINAL");
 
-    const qf = matches.filter(m => m.stage === "QF");
-    if (qf != null) {
-      const sf = matches.filter(m => m.stage === "SF");
-      const final = matches.filter(m => m.stage === "FINAL");
-
-      const wrapper = document.createElement("div");
-      wrapper.className = "bracket-ldc";
-
-      wrapper.innerHTML = `
-      <div class="round">${qf.slice(0, 2).map(renderMatch).join("")}</div>
-      <div class="round">${[sf[0]].map(renderMatch).join("")}</div>
-      <div class="round">${final.map(renderMatch).join("")}</div>
-      <div class="round">${[sf[1]].map(renderMatch).join("")}</div>
-      <div class="round">${qf.slice(2, 4).map(renderMatch).join("")}</div>
-    `;
-
-      container.appendChild(wrapper);
+    if (matches.length === 0) {
+      container.innerHTML = `
+        <div class="knockout-empty-state">
+          <span aria-hidden="true">🏆</span>
+          <p>The knockout stage has not been generated yet.</p>
+        </div>
+      `;
+      return;
     }
+
+    const board = document.createElement("div");
+    board.className = "knockout-board";
+
+    if (quarterFinals.length > 0) {
+      board.innerHTML = `
+        ${renderKnockoutRound("Quarter-finals", quarterFinals.slice(0, 2), "knockout-round--quarter-left")}
+        ${renderKnockoutRound("Semi-finals", semiFinals.slice(0, 1), "knockout-round--semi-left")}
+        ${renderKnockoutRound("Final", finals, "knockout-round--final")}
+        ${renderKnockoutRound("Semi-finals", semiFinals.slice(1, 2), "knockout-round--semi-right")}
+        ${renderKnockoutRound("Quarter-finals", quarterFinals.slice(2, 4), "knockout-round--quarter-right")}
+      `;
+    } else {
+      board.innerHTML = `
+        ${renderKnockoutRound("Semi-finals", semiFinals, "knockout-round--semi-direct")}
+        ${renderKnockoutRound("Final", finals, "knockout-round--final")}
+      `;
+    }
+
+    container.innerHTML = "";
+    const scrollArea = document.createElement("div");
+    scrollArea.className = "knockout-scroll-area";
+    scrollArea.appendChild(board);
+    container.appendChild(scrollArea);
   }
 
-  function renderColumn(matches) {
+  function renderKnockoutRound(title, matches, modifier) {
     return `
-    <div class="round">
-      ${matches.map(m => renderMatch(m)).join("")}
-    </div>
-  `;
+      <section class="knockout-round ${modifier}">
+        <h3>${title}</h3>
+        <div class="knockout-round-matches">
+          ${matches.map(renderKnockoutMatch).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderKnockoutMatch(match) {
+    const disabled = (match.played || !match.teamA || !match.teamB) ? "disabled" : "";
+    const goals = getGoalsForMatch(match.id);
+    const goalsA = goals.filter(goal => goal.team === "A");
+    const goalsB = goals.filter(goal => goal.team === "B");
+    const teamAName = match.teamAName || "Team to be decided";
+    const teamBName = match.teamBName || "Team to be decided";
+    const scoreA = match.scoreA === "" || match.scoreA == null ? "" : match.scoreA;
+    const scoreB = match.scoreB === "" || match.scoreB == null ? "" : match.scoreB;
+    const penaltyWinner = match.penaltyWinner === "A" ? teamAName :
+      match.penaltyWinner === "B" ? teamBName : null;
+
+    return `
+      <article class="knockout-match-card ${match.played ? "is-played" : ""}">
+        <div class="knockout-teams">
+          ${renderKnockoutTeamLine(match, "A", teamAName, scoreA, disabled)}
+          ${renderKnockoutTeamLine(match, "B", teamBName, scoreB, disabled)}
+        </div>
+
+        ${renderKnockoutScorers(goalsA, goalsB, teamAName, teamBName)}
+        ${penaltyWinner ? `<p class="knockout-penalty">Won on penalties: ${escapeHtml(penaltyWinner)}</p>` : ""}
+
+        <div class="knockout-match-actions">
+          ${!match.played && match.teamA && match.teamB
+            ? `<button class="save-btn" onclick="saveScore('${match.id}')">Save result</button>`
+            : `<span class="knockout-played-status">${match.played ? "Result saved" : "Waiting for teams"}</span>`}
+        </div>
+      </article>
+    `;
+  }
+
+  function renderKnockoutTeamLine(match, team, teamName, score, disabled) {
+    const scoreId = `${team === "A" ? "a" : "b"}_${match.id}`;
+
+    return `
+      <div class="knockout-team-line">
+        <span class="knockout-team-name">${escapeHtml(teamName)}</span>
+        <div class="knockout-score-actions">
+          <input type="number" min="0" step="1" id="${scoreId}" value="${score}" ${disabled} aria-label="Score for ${escapeHtml(teamName)}">
+          <button class="forfeit-btn" ${disabled} onclick="setForfeit('${match.id}', '${team}')">Forfeit</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderKnockoutScorers(goalsA, goalsB, teamAName, teamBName) {
+    if (goalsA.length === 0 && goalsB.length === 0) return "";
+
+    return `
+      <div class="knockout-scorers" aria-label="Scorers">
+        ${renderKnockoutScorerTeam(goalsA, teamAName)}
+        ${renderKnockoutScorerTeam(goalsB, teamBName)}
+      </div>
+    `;
+  }
+
+  function renderKnockoutScorerTeam(goals, teamName) {
+    if (goals.length === 0) return "";
+
+    return `
+      <p>
+        <strong>${escapeHtml(teamName)}</strong>
+        <span>⚽ ${goals.map(goal => escapeHtml(goal.playerName)).join(", ")}</span>
+      </p>
+    `;
   }
 
   function generateFinalPhase() {

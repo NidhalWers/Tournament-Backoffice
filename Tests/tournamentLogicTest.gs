@@ -12,11 +12,106 @@ function testTournamentLogic() {
       }
     },
     {
-      name: "considers the group stage complete only when every match has been played",
+      name: "With_GroupLegsConfiguration_Should_DefaultToSingleLegAndAcceptReturnLegs",
       test: function() {
-        assertTrue(isGroupStageComplete([]));
-        assertTrue(isGroupStageComplete([{ played: true }, { played: true }]));
-        assertEquals(false, isGroupStageComplete([{ played: true }, { played: false }]));
+        // Arrange / Act / Assert
+        assertEquals(1, getTournamentGroupLegsFromRow({}));
+        assertEquals(1, getTournamentGroupLegsFromRow({ groupLegs: "1" }));
+        assertEquals(2, getTournamentGroupLegsFromRow({ groupLegs: "2" }));
+        assertThrows(
+          () => getTournamentGroupLegsFromRow({ groupLegs: "3" }),
+          "Invalid group-stage legs configuration"
+        );
+      }
+    },
+    {
+      name: "With_CompleteGroup_Should_RequireEveryExpectedValidResult",
+      test: function() {
+        // Arrange
+        const tournamentTeams = groupTeams("A", ["1", "2", "3"]);
+        const completeMatches = [
+          groupMatch("A", "1", "2", 1, 0, true),
+          groupMatch("A", "1", "3", 0, 0, true),
+          groupMatch("A", "2", "3", 0, 1, true)
+        ];
+
+        // Act / Assert
+        assertEquals(false, isGroupStageComplete([], tournamentTeams));
+        assertTrue(isGroupStageComplete(completeMatches, tournamentTeams));
+        assertEquals(false, isGroupStageComplete([
+          groupMatch("A", "1", "2", 1, 0, true),
+          groupMatch("A", "1", "3", "", 0, true),
+          groupMatch("A", "2", "3", 0, 1, true)
+        ], tournamentTeams));
+      }
+    },
+    {
+      name: "With_MissingTeamMatch_Should_BlockGroupStageCompletion",
+      test: function() {
+        // Arrange
+        const tournamentTeams = groupTeams("A", ["1", "2", "3", "4"]);
+        const matches = [
+          groupMatch("A", "1", "2", 1, 0, true),
+          groupMatch("A", "1", "3", 1, 0, true),
+          groupMatch("A", "1", "4", 1, 0, true),
+          groupMatch("A", "2", "3", 1, 0, true),
+          groupMatch("A", "2", "4", 1, 0, true)
+        ];
+
+        // Act
+        const result = isGroupStageComplete(matches, tournamentTeams);
+
+        // Assert
+        assertEquals(false, result);
+      }
+    },
+    {
+      name: "With_TwoLegs_Should_RequireTwoDirectionsAndFourMatchesPerTeam",
+      test: function() {
+        // Arrange
+        const tournamentTeams = groupTeams("A", ["1", "2", "3"])
+          .concat(groupTeams("B", ["4", "5", "6"]));
+        const matches = generateRoundRobinLegs(["1", "2", "3"], 2)
+          .map(match => groupMatch("A", match[0], match[1], 1, 0, true))
+          .concat(generateRoundRobinLegs(["4", "5", "6"], 2)
+            .map(match => groupMatch("B", match[0], match[1], 1, 0, true)));
+
+        // Act
+        const result = isGroupStageComplete(matches, tournamentTeams, 2);
+
+        // Assert
+        assertTrue(result);
+        assertEquals(false, isGroupStageComplete(matches.slice(0, 5), tournamentTeams, 2));
+        assertEquals(false, isGroupStageComplete(
+          matches.slice(0, 5).concat([matches[0]]),
+          tournamentTeams,
+          2
+        ));
+      }
+    },
+    {
+      name: "With_TwoLegs_Should_AccumulateAllMatchesAndHeadToHeadResults",
+      test: function() {
+        // Arrange
+        const matches = [
+          groupMatch("A", "1", "2", 1, 0, true),
+          groupMatch("A", "2", "1", 2, 0, true),
+          groupMatch("A", "1", "3", 1, 0, true),
+          groupMatch("A", "3", "1", 0, 1, true),
+          groupMatch("A", "2", "3", 1, 0, true),
+          groupMatch("A", "3", "2", 0, 1, true)
+        ];
+
+        // Act
+        const standings = computeStandings(matches, {}, []);
+        const headToHeadPoints = getHeadToHeadPointsByTeam([
+          { teamId: "1", pts: 6, gf: 3, ga: 2 },
+          { teamId: "2", pts: 6, gf: 4, ga: 3 }
+        ], matches);
+
+        // Assert
+        assertTrue(standings.A.every(standing => standing.played === 4));
+        assertDeepEquals({ "1": 3, "2": 3 }, headToHeadPoints);
       }
     },
     {
@@ -46,6 +141,24 @@ function testTournamentLogic() {
       }
     },
     {
+      name: "With_InvalidPlayedScore_Should_ExcludeMatchFromStandings",
+      test: function() {
+        // Arrange
+        const matches = [
+          groupMatch("A", "1", "2", "", 1, true)
+        ];
+
+        // Act
+        const standings = computeStandings(matches, {}, []);
+
+        // Assert
+        assertDeepEquals(
+          { played: 0, win: 0, draw: 0, loss: 0, gf: 0, ga: 0, pts: 0 },
+          selectStandingStats(standings.A[0])
+        );
+      }
+    },
+    {
       name: "breaks ties by goal difference and then goals scored",
       test: function() {
         const matches = [
@@ -55,6 +168,50 @@ function testTournamentLogic() {
         const standings = computeStandings(matches, {}, []);
 
         assertDeepEquals(["1", "3", "2", "4"], standings.A.map(row => row.team));
+      }
+    },
+    {
+      name: "With_SamePointsAndGoalDifference_Should_UseHeadToHeadBeforeGoalsScored",
+      test: function() {
+        // Arrange
+        const matches = [
+          groupMatch("A", "1", "2", 2, 0, true),
+          groupMatch("A", "1", "3", 0, 4, true),
+          groupMatch("A", "2", "3", 4, 0, true),
+          groupMatch("A", "2", "4", 0, 4, true)
+        ];
+
+        // Act
+        const standings = computeStandings(matches, {}, []);
+        const teamOneIndex = standings.A.findIndex(team => team.teamId === "1");
+        const teamTwoIndex = standings.A.findIndex(team => team.teamId === "2");
+
+        // Assert
+        assertTrue(teamOneIndex < teamTwoIndex);
+        assertEquals(2, standings.A[teamOneIndex].gf);
+        assertEquals(4, standings.A[teamTwoIndex].gf);
+      }
+    },
+    {
+      name: "With_ThreeTeamsTied_Should_UseHeadToHeadMiniTable",
+      test: function() {
+        // Arrange
+        const standings = [
+          { teamId: "1", pts: 6, gf: 1, ga: 0, fairPlayScore: 0 },
+          { teamId: "2", pts: 6, gf: 5, ga: 4, fairPlayScore: 0 },
+          { teamId: "3", pts: 6, gf: 8, ga: 7, fairPlayScore: 0 }
+        ];
+        const matches = [
+          groupMatch("A", "1", "2", 1, 0, true),
+          groupMatch("A", "1", "3", 1, 0, true),
+          groupMatch("A", "2", "3", 1, 0, true)
+        ];
+
+        // Act
+        const result = sortGroupStandings(standings, matches);
+
+        // Assert
+        assertDeepEquals(["1", "2", "3"], result.map(team => team.teamId));
       }
     },
     {
@@ -108,6 +265,10 @@ function testTournamentLogic() {
 
 function groupMatch(group, teamA, teamB, scoreA, scoreB, played) {
   return { group, teamA, teamB, scoreA, scoreB, played };
+}
+
+function groupTeams(group, teamIds) {
+  return teamIds.map(teamId => ({ group, teamId }));
 }
 
 function selectStandingStats(standing) {

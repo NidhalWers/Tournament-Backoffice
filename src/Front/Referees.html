@@ -1,0 +1,174 @@
+<script>
+
+  function renderRefereeManager(tournamentTeams, referees, setupReady, missingSheets) {
+    const manager = document.getElementById("refereeManager");
+    const count = document.getElementById("refereeCount");
+    const setupMessage = document.getElementById("refereeSetupMessage");
+    const teamSelect = document.getElementById("refereeTeam");
+    const nameInput = document.getElementById("refereeName");
+    const addButton = document.getElementById("addRefereeButton");
+    const roster = document.getElementById("refereeRoster");
+
+    count.textContent = `${referees.length} registered`;
+    setupMessage.hidden = setupReady;
+    teamSelect.disabled = !setupReady;
+    nameInput.disabled = !setupReady;
+    addButton.disabled = !setupReady;
+
+    if (!setupReady) {
+      const sheetNames = missingSheets.join(" and ");
+      setupMessage.textContent = `Missing ${sheetNames}. Run the spreadsheet initializer or create the sheets with the documented headers.`;
+      manager.open = true;
+    }
+
+    teamSelect.innerHTML = "";
+
+    tournamentTeams.forEach(team => {
+      const option = document.createElement("option");
+      option.value = team.teamId;
+      option.textContent = `${team.teamName} · Group ${team.group}`;
+      teamSelect.appendChild(option);
+    });
+
+    roster.innerHTML = "";
+
+    if (referees.length === 0) {
+      const emptyState = document.createElement("p");
+      emptyState.className = "referee-empty-state";
+      emptyState.textContent = setupReady
+        ? "No referee registered yet."
+        : "Referees will appear here once the required sheets are ready.";
+      roster.appendChild(emptyState);
+      return;
+    }
+
+    referees.forEach(referee => {
+      const row = document.createElement("div");
+      row.className = "referee-roster-row";
+
+      const identity = document.createElement("div");
+      identity.className = "referee-identity";
+
+      const name = document.createElement("strong");
+      name.textContent = referee.playerName;
+
+      const team = document.createElement("small");
+      team.textContent = `${referee.teamName} · Group ${referee.group}`;
+
+      const removeButton = document.createElement("button");
+      removeButton.type = "button";
+      removeButton.className = "referee-remove-btn";
+      removeButton.textContent = "Remove";
+      removeButton.setAttribute("aria-label", `Remove ${referee.playerName}`);
+      removeButton.onclick = () => deleteTournamentReferee(referee.id, referee.playerName);
+
+      identity.appendChild(name);
+      identity.appendChild(team);
+      row.appendChild(identity);
+      row.appendChild(removeButton);
+      roster.appendChild(row);
+    });
+  }
+
+  function renderMatchRefereeSelector(match) {
+    if (!window.refereeSetupReady) {
+      return `
+        <div class="match-referee-row match-referee-unavailable">
+          <span class="match-referee-label">Referee</span>
+          <span>Setup required</span>
+        </div>
+      `;
+    }
+
+    const assignments = window.currentRefereeAssignments || [];
+    const referees = window.currentReferees || [];
+    const eligibleByMatch = window.eligibleRefereeIdsByMatch || {};
+    const assignment = assignments.find(entry => String(entry.matchId) === String(match.id));
+    const selectedRefereeId = assignment ? String(assignment.refereeId) : "";
+    const eligibleIds = new Set((eligibleByMatch[String(match.id)] || []).map(String));
+    const availableReferees = referees.filter(referee =>
+      eligibleIds.has(String(referee.id)) || String(referee.id) === selectedRefereeId
+    );
+    const placeholder = selectedRefereeId
+      ? "No referee"
+      : availableReferees.length > 0
+        ? "Select a referee"
+        : "No referee available";
+    const options = availableReferees.map(referee => {
+      const selected = String(referee.id) === selectedRefereeId ? "selected" : "";
+      const label = `${referee.playerName} · ${referee.teamName} (Group ${referee.group})`;
+
+      return `<option value="${escapeHtml(referee.id)}" ${selected}>${escapeHtml(label)}</option>`;
+    }).join("");
+    const disabled = availableReferees.length === 0 && !selectedRefereeId ? "disabled" : "";
+
+    return `
+      <div class="match-referee-row">
+        <label for="referee_${escapeHtml(match.id)}" class="match-referee-label">Referee</label>
+        <select id="referee_${escapeHtml(match.id)}" ${disabled}
+          onchange="updateMatchReferee('${escapeHtml(match.id)}', this.value, this)">
+          <option value="">${placeholder}</option>
+          ${options}
+        </select>
+        <span id="referee_status_${escapeHtml(match.id)}" class="match-referee-status" aria-live="polite"></span>
+      </div>
+    `;
+  }
+
+  function addTournamentReferee() {
+    const tournamentId = document.getElementById("tournamentSelect").value;
+    const teamId = document.getElementById("refereeTeam").value;
+    const nameInput = document.getElementById("refereeName");
+    const playerName = nameInput.value.trim();
+
+    if (!teamId || !playerName) {
+      alert("Select a team and enter the player's name.");
+      return;
+    }
+
+    showLoader();
+
+    google.script.run
+      .withSuccessHandler(() => {
+        nameInput.value = "";
+        loadTournament();
+      })
+      .withFailureHandler(error => {
+        hideLoader();
+        alert(error.message);
+      })
+      .saveTournamentReferee(tournamentId, teamId, playerName);
+  }
+
+  function deleteTournamentReferee(refereeId, playerName) {
+    if (!confirm(`Remove ${playerName} from the referee list?`)) return;
+
+    showLoader();
+
+    google.script.run
+      .withSuccessHandler(() => loadTournament())
+      .withFailureHandler(error => {
+        hideLoader();
+        alert(error.message);
+      })
+      .deleteTournamentReferee(refereeId);
+  }
+
+  function updateMatchReferee(matchId, refereeId, selectElement) {
+    const status = document.getElementById("referee_status_" + matchId);
+
+    selectElement.disabled = true;
+    status.textContent = "Saving…";
+
+    google.script.run
+      .withSuccessHandler(() => loadTournament())
+      .withFailureHandler(error => {
+        selectElement.disabled = false;
+        status.textContent = "";
+        alert(error.message);
+        loadTournament();
+      })
+      .saveMatchReferee(matchId, refereeId);
+  }
+
+</script>

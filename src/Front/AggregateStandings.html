@@ -1,0 +1,150 @@
+<script>
+
+  function loadAggregateStandings() {
+    const startDate = document.getElementById("aggregateStartDate").value;
+    const endDate = document.getElementById("aggregateEndDate").value;
+
+    if (startDate && endDate && startDate > endDate) {
+      alert("The start date must be before the end date.");
+      return;
+    }
+
+    showLoader();
+
+    google.script.run
+      .withSuccessHandler(renderAggregateStandings)
+      .withFailureHandler(err => {
+        hideLoader();
+        alert(err.message);
+      })
+      .getAggregateStandings(startDate, endDate);
+  }
+
+  function renderAggregateStandings(data) {
+    hideLoader();
+
+    const container = document.getElementById("aggregateStandings");
+    const tournaments = data && data.tournaments ? data.tournaments : [];
+    const standings = data && data.standings ? data.standings : [];
+
+    if (tournaments.length === 0) {
+      container.innerHTML = `
+        <div class="aggregate-empty-state">
+          <span aria-hidden="true">🏅</span>
+          <p>No completed tournaments are available yet.</p>
+        </div>
+      `;
+      return;
+    }
+
+    if (standings.length === 0) {
+      container.innerHTML = `
+        <div class="aggregate-empty-state">
+          <span aria-hidden="true">🏅</span>
+          <p>No participating teams were found in the completed tournaments.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const tournamentNames = tournaments.map(tournament => escapeHtml(tournament.name)).join(" · ");
+    const startDate = document.getElementById("aggregateStartDate").value;
+    const endDate = document.getElementById("aggregateEndDate").value;
+    const periodDescription = formatAggregatePeriod(startDate, endDate);
+    const tableHeaders = tournaments
+      .map(tournament => `<th>${escapeHtml(tournament.name)}</th>`)
+      .join("");
+    const tableRows = standings.map((standing, index) => `
+      <tr>
+        <td>${index + 1}</td>
+        <td class="aggregate-team-name">${escapeHtml(standing.teamName)}</td>
+        <td>${formatAggregateScore(standing.weightedScore)}</td>
+        <td>${formatAggregateAverage(standing.averagePlacement)}</td>
+        <td>${standing.participationCount}</td>
+        <td>${standing.wins}</td>
+        <td>${formatSignedNumber(standing.goalDifference)}</td>
+        <td>${standing.gf}</td>
+        <td>${standing.ga}</td>
+        ${tournaments.map(tournament => `<td>${getAggregatePlacement(standing, tournament.id)}</td>`).join("")}
+      </tr>
+    `).join("");
+
+    const cards = standings.map((standing, index) => `
+      <article class="aggregate-card">
+        <div class="aggregate-card-heading">
+          <span class="aggregate-rank">#${index + 1}</span>
+          <div>
+            <h3>${escapeHtml(standing.teamName)}</h3>
+            <p>Weighted score: <strong>${formatAggregateScore(standing.weightedScore)}</strong> · Average place: ${formatAggregateAverage(standing.averagePlacement)} across ${standing.participationCount} tournament${standing.participationCount > 1 ? "s" : ""}</p>
+          </div>
+        </div>
+        <dl class="aggregate-card-stats">
+          <div><dt>Wins</dt><dd>${standing.wins}</dd></div>
+          <div><dt>Goal difference</dt><dd>${formatSignedNumber(standing.goalDifference)}</dd></div>
+          <div><dt>Goals for</dt><dd>${standing.gf}</dd></div>
+          <div><dt>Goals against</dt><dd>${standing.ga}</dd></div>
+        </dl>
+        <div class="aggregate-card-placements">
+          ${tournaments.map(tournament => `
+            <div>
+              <span>${escapeHtml(tournament.name)}</span>
+              <strong>${getAggregatePlacement(standing, tournament.id)}</strong>
+            </div>
+          `).join("")}
+        </div>
+      </article>
+    `).join("");
+
+    container.innerHTML = `
+      <p class="aggregate-description">
+        ${periodDescription} Completed tournaments: ${tournamentNames}. Teams are ranked by weighted tournament performance, then wins, goal difference and goals scored.
+      </p>
+      <div class="aggregate-table-wrap">
+        <table class="aggregate-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Team</th>
+              <th>Weighted score</th>
+              <th>Average place</th>
+              <th>Tournaments</th>
+              <th>Wins</th>
+              <th>GD</th>
+              <th>GF</th>
+              <th>GA</th>
+              ${tableHeaders}
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+      <div class="aggregate-cards">${cards}</div>
+    `;
+  }
+
+  function getAggregatePlacement(standing, tournamentId) {
+    const placement = standing.placements.find(current => String(current.tournamentId) === String(tournamentId));
+    return placement ? `#${placement.rank}` : "—";
+  }
+
+  function formatAggregateAverage(value) {
+    return Number.isInteger(value) ? String(value) : value.toFixed(2);
+  }
+
+  function formatAggregateScore(value) {
+    return Number(value).toFixed(2).replace(/\.00$/, "");
+  }
+
+  function formatSignedNumber(value) {
+    return value > 0 ? `+${value}` : String(value);
+  }
+
+  function formatAggregatePeriod(startDate, endDate) {
+    if (startDate && endDate) return `Period: ${startDate} to ${endDate}.`;
+    if (startDate) return `Period: from ${startDate}.`;
+    if (endDate) return `Period: until ${endDate}.`;
+
+    return "All dates.";
+  }
+
+</script>
